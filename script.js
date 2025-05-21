@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const coolingStatusText = document.getElementById('coolingStatusText');
     const coolingSwitch = document.getElementById('coolingSwitch');
 
-    const API_URL = '/api/sensordata'; // Placeholder for your backend API endpoint
-    const CONTROL_API_URL = '/api/control'; // Placeholder for control endpoint
+    const API_URL = '/.netlify/functions/api/api/sensordata'; // Netlify Function URL
+    const CONTROL_API_URL = '/.netlify/functions/api/api/control'; // Netlify Function URL
 
     // --- Gauge Update Function ---
     function updateGauge(value, arrowElement, valueElement) {
@@ -43,19 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // }
             // const data = await response.json();
 
-            // Mock data for now, replace with actual API call
-            const data = {
-                panelTemp: 29.2,
-                ambientTemp: -20.0, // From image, seems like an error or extreme cold
-                lightIntensity: 13,
-                humidity: 8,
-                panelEnergy: 0,
-                panelVoltage: 12.1,
-                panelCurrent: 0.12,
-                panelPower: 1.4,
-                coolingStatus: true, // true for ON, false for OFF
-                manualMode: false // Default to auto
-            };
+            const response = await fetch(API_URL);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
             console.log('Fetched data:', data);
 
 
