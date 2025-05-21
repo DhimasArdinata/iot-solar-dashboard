@@ -8,7 +8,10 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors()); // Enable CORS for all routes
 app.use(express.json()); // Parse JSON bodies
-app.use(express.static(path.join(__dirname, '/'))); // Serve static files from the root of iot_dashboard
+
+// Serve static files (HTML, CSS, JS) from the current directory
+// This ensures that files like style.css and script.js are found relative to index.html
+app.use(express.static(__dirname));
 
 // In-memory data store (replace with a database in production)
 let latestSensorData = {
