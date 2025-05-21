@@ -6,6 +6,7 @@
     <title>Solar Panel Cooling IoT Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <body>
     <div class="container">
         <header>
@@ -16,13 +17,7 @@
                 <div class="card large">
                     <h2>Suhu Panel</h2>
                     <div class="gauge-container">
-                        <div class="gauge">
-                            <div class="gauge-arrow" id="panelTempArrow"></div>
-                            <div class="gauge-value" id="panelTempValue">-- °C</div>
-                        </div>
-                        <div class="gauge-min-max">
-                            <span>1</span><span>80</span>
-                        </div>
+                        <canvas id="panelTempGauge"></canvas>
                     </div>
                 </div>
 

@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
-    const panelTempValue = document.getElementById('panelTempValue');
-    const panelTempArrow = document.getElementById('panelTempArrow');
+    const panelTempGauge = document.getElementById('panelTempGauge');
+    let panelTempChart;
     const ambientTempValue = document.getElementById('ambientTempValue');
     const lightIntensityValue = document.getElementById('lightIntensityValue');
     const humidityValue = document.getElementById('humidityValue');
@@ -16,33 +16,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const API_URL = '/.netlify/functions/api/api/sensordata'; // Netlify Function URL
     const CONTROL_API_URL = '/.netlify/functions/api/api/control'; // Netlify Function URL
 
-    // --- Gauge Update Function ---
-    function updateGauge(value, arrowElement, valueElement) {
+    function updateGauge(value) {
         const minTemp = 1;
         const maxTemp = 80;
         const percentage = Math.max(0, Math.min(100, ((value - minTemp) / (maxTemp - minTemp)) * 100));
-        // The gauge is a semicircle, so 0% = -90deg, 100% = 90deg. Total range 180deg.
-        // The arrow starts at -90deg (pointing left).
-        // So, rotation = (percentage / 100) * 180 - 90;
         const rotation = (percentage / 100) * 180 - 90;
-
-        if (arrowElement) {
-            arrowElement.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
-        }
-        if (valueElement) {
-            valueElement.textContent = `${value.toFixed(1)} °C`;
-        }
     }
 
     // --- Fetch and Update Data ---
     async function fetchData() {
         try {
-            // const response = await fetch(API_URL);
-            // if (!response.ok) {
-            //     throw new Error(`HTTP error! status: ${response.status}`);
-            // }
-            // const data = await response.json();
-
             const response = await fetch(API_URL);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -50,11 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             console.log('Fetched data:', data);
 
-
             // Update UI elements
-            if (panelTempValue && panelTempArrow) {
-                updateGauge(data.panelTemp, panelTempArrow, panelTempValue);
-            }
+            updateGauge(data.panelTemp);
             if (ambientTempValue) ambientTempValue.textContent = `${data.ambientTemp.toFixed(1)} °C`;
             if (lightIntensityValue) lightIntensityValue.textContent = `${data.lightIntensity.toFixed(0)} lx`;
             if (humidityValue) humidityValue.textContent = `${data.humidity.toFixed(0)} %`;
@@ -117,7 +97,53 @@ document.addEventListener('DOMContentLoaded', () => {
         coolingSwitch.addEventListener('change', handleCoolingSwitchChange);
     }
 
+    function initializeChart() {
+        panelTempChart = new Chart(panelTempGauge, {
+            type: 'radialGauge',
+            data: {
+                datasets: [{
+                    data: [0],
+                    backgroundColor: ['rgba(77, 208, 225, 0.8)'],
+                    borderWidth: 0,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: false
+                    }
+                },
+                scales: {
+                    r: {
+                        min: 1,
+                        max: 80,
+                        axis: 'r',
+                        ticks: {
+                            display: true,
+                            stepSize: 10,
+                            color: '#666',
+                            z: 1
+                        },
+                        grid: {
+                            color: '#ccc',
+                            circular: true
+                        },
+                        pointLabels: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     // Initial data fetch
+    initializeChart();
     fetchData();
 
     // Fetch data periodically

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const serverless = require('serverless-http');
 
 const app = express();
 // const PORT = process.env.PORT || 3000; // Netlify provides its own port
@@ -60,21 +61,60 @@ app.post('/api/update', (req, res) => {
     const data = req.body;
     console.log('Received data from ESP32:', data);
 
+    // Data validation
+    const panelTemp = data.t_ds !== undefined ? parseFloat(data.t_ds) : latestSensorData.panelTemp;
+    const ambientTemp = data.t_dht !== undefined ? parseFloat(data.t_dht) : latestSensorData.ambientTemp;
+    const lightIntensity = data.lux !== undefined ? parseFloat(data.lux) : latestSensorData.lightIntensity;
+    const humidity = data.h_dht !== undefined ? parseFloat(data.h_dht) : latestSensorData.humidity;
+    const panelVoltage = data.voltage !== undefined ? parseFloat(data.voltage) : latestSensorData.panelVoltage;
+    const panelCurrent = data.current !== undefined ? parseFloat(data.current) : latestSensorData.panelCurrent;
+    const panelPower = data.power !== undefined ? parseFloat(data.power) : latestSensorData.panelPower;
+    const panelEnergy = data.energy !== undefined ? parseFloat(data.energy) : latestSensorData.panelEnergy;
+    const ssr1 = data.ssr1 !== undefined ? Boolean(data.ssr1) : latestSensorData.ssr1;
+    const ssr3 = data.ssr3 !== undefined ? Boolean(data.ssr3) : latestSensorData.ssr3;
+    const ssr4 = data.ssr4 !== undefined ? Boolean(data.ssr4) : latestSensorData.ssr4;
+    const manualMode = data.globalManualMode !== undefined ? Boolean(data.globalManualMode) : latestSensorData.manualMode;
+
+    if (isNaN(panelTemp) || panelTemp < 1 || panelTemp > 80) {
+        return res.status(400).json({ message: 'Invalid panel temperature value' });
+    }
+    if (isNaN(ambientTemp) || ambientTemp < -50 || ambientTemp > 50) {
+        return res.status(400).json({ message: 'Invalid ambient temperature value' });
+    }
+    if (isNaN(lightIntensity) || lightIntensity < 0 || lightIntensity > 100000) {
+        return res.status(400).json({ message: 'Invalid light intensity value' });
+    }
+    if (isNaN(humidity) || humidity < 0 || humidity > 100) {
+        return res.status(400).json({ message: 'Invalid humidity value' });
+    }
+    if (isNaN(panelVoltage) || panelVoltage < 0 || panelVoltage > 20) {
+        return res.status(400).json({ message: 'Invalid panel voltage value' });
+    }
+    if (isNaN(panelCurrent) || panelCurrent < 0 || panelCurrent > 10) {
+        return res.status(400).json({ message: 'Invalid panel current value' });
+    }
+    if (isNaN(panelPower) || panelPower < 0 || panelPower > 200) {
+        return res.status(400).json({ message: 'Invalid panel power value' });
+    }
+    if (isNaN(panelEnergy) || panelEnergy < 0) {
+        return res.status(400).json({ message: 'Invalid panel energy value' });
+    }
+
     latestSensorData = {
-        panelTemp: data.t_ds !== undefined ? parseFloat(data.t_ds) : latestSensorData.panelTemp,
-        ambientTemp: data.t_dht !== undefined ? parseFloat(data.t_dht) : latestSensorData.ambientTemp,
-        lightIntensity: data.lux !== undefined ? parseFloat(data.lux) : latestSensorData.lightIntensity,
-        humidity: data.h_dht !== undefined ? parseFloat(data.h_dht) : latestSensorData.humidity,
-        panelVoltage: data.voltage !== undefined ? parseFloat(data.voltage) : latestSensorData.panelVoltage,
-        panelCurrent: data.current !== undefined ? parseFloat(data.current) : latestSensorData.panelCurrent,
-        panelPower: data.power !== undefined ? parseFloat(data.power) : latestSensorData.panelPower,
-        panelEnergy: data.energy !== undefined ? parseFloat(data.energy) : latestSensorData.panelEnergy,
-        ssr1: data.ssr1 !== undefined ? Boolean(data.ssr1) : latestSensorData.ssr1,
-        ssr3: data.ssr3 !== undefined ? Boolean(data.ssr3) : latestSensorData.ssr3,
-        ssr4: data.ssr4 !== undefined ? Boolean(data.ssr4) : latestSensorData.ssr4,
+        panelTemp,
+        ambientTemp,
+        lightIntensity,
+        humidity,
+        panelVoltage,
+        panelCurrent,
+        panelPower,
+        panelEnergy,
+        ssr1,
+        ssr3,
+        ssr4,
         // coolingStatus is derived from ssr states if not in web manual mode
-        coolingStatus: (data.ssr1 || data.ssr3 || data.ssr4),
-        manualMode: data.globalManualMode !== undefined ? Boolean(data.globalManualMode) : latestSensorData.manualMode, // ESP32's auto/manual mode
+        coolingStatus: (ssr1 || ssr3 || ssr4),
+        manualMode, // ESP32's auto/manual mode
     };
     res.status(200).json({ message: 'Data updated successfully' });
 });
@@ -122,23 +162,31 @@ app.get('/api/getcontrol', (req, res) => {
 //     console.log(`  GET  /api/getcontrol    (for ESP32 to poll for web UI commands)`);
 // });
 
-exports.handler = async (event, context) => {
-  //  console.log('Received event:', event); // Log the event for debugging
-    // Set the base path for the API routes
-    app.set('base', '/.netlify/functions/api');
-    //  console.log('Base URL:', app.get('base')); // Log the base URL
+// Wrap the Express app with serverless-http
+const handler = serverless(app);
 
-    // Handle the request
+// Netlify handler function
+exports.handler = async (event, context) => {
+    // You can add any specific pre-processing for the event or context here if needed
+    // For example, ensuring the path is correctly interpreted by Express
+    // if (event.path.startsWith('/.netlify/functions/api')) {
+    //     event.path = event.path.substring('/.netlify/functions/api'.length) || '/';
+    // }
+    // console.log('Modified event path:', event.path);
+
+    // It's good practice to set a base path if your function is not at the root
+    // However, serverless-http usually handles path resolution well.
+    // If you have issues with routing, you might need to adjust `event.path`
+    // or use Express Routers with base paths.
+
     try {
-        //  console.log('Handling request:', event.httpMethod, event.path); // Log the request method and path
-        const result = await app(event, context);
-        //   console.log('Request handled successfully:', result); // Log the result
+        const result = await handler(event, context);
         return result;
     } catch (error) {
-        console.error('Error handling request:', error); // Log any errors
+        console.error('Error in serverless handler:', error);
         return {
             statusCode: 500,
-            body: JSON.stringify({ message: 'Internal Server Error', error: error.message }),
+            body: JSON.stringify({ message: 'Internal Server Error in handler', error: error.message }),
         };
     }
 };
