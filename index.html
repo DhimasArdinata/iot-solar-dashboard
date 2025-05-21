@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Panel Cooling IoT Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Solar Panel Cooling System</h1>
+        </header>
+        <main>
+            <div class="grid-container">
+                <div class="card large">
+                    <h2>Suhu Panel</h2>
+                    <div class="gauge-container">
+                        <div class="gauge">
+                            <div class="gauge-arrow" id="panelTempArrow"></div>
+                            <div class="gauge-value" id="panelTempValue">-- °C</div>
+                        </div>
+                        <div class="gauge-min-max">
+                            <span>1</span><span>80</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Suhu Ambien</h2>
+                    <p id="ambientTempValue">-- °C</p>
+                </div>
+
+                <div class="card">
+                    <h2>Intensitas Cahaya</h2>
+                    <p id="lightIntensityValue">-- lx</p>
+                </div>
+
+                <div class="card">
+                    <h2>Kelembaban</h2>
+                    <p id="humidityValue">-- %</p>
+                </div>
+
+                <div class="card">
+                    <h2>Energi Panel</h2>
+                    <p id="panelEnergyValue">-- kWh</p>
+                </div>
+
+                <div class="card">
+                    <h2>Tegangan Panel</h2>
+                    <p id="panelVoltageValue">-- V</p>
+                </div>
+
+                <div class="card">
+                    <h2>Arus Panel</h2>
+                    <p id="panelCurrentValue">-- A</p>
+                </div>
+
+                <div class="card">
+                    <h2>Daya Panel</h2>
+                    <p id="panelPowerValue">-- W</p>
+                </div>
+                
+                <div class="card wide">
+                    <h2>Status Pendingin</h2>
+                    <div class="status-indicator-container">
+                        <div class="status-indicator" id="coolingStatusIndicator"></div>
+                        <span id="coolingStatusText">OFF</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Switch Pendingin</h2>
+                    <label class="switch" for="coolingSwitch">
+                        <input type="checkbox" id="coolingSwitch" aria-label="Cooling System Switch">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+        </main>
+        <footer>
+            <p>IoT Dashboard v1.0</p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

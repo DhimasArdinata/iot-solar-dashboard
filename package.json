@@ -1,0 +1,21 @@
+{
+  "name": "iot-dashboard-backend",
+  "version": "1.0.0",
+  "description": "Backend for Solar Panel Cooling IoT Dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "iot",
+    "dashboard",
+    "solar"
+  ],
+  "author": "Cline",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

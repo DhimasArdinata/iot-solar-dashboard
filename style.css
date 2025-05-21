@@ -1,0 +1,269 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    background-color: #f4f6f8;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+header {
+    background-color: #007bff;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.8em;
+}
+
+main {
+    padding: 20px;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+}
+
+.card.large {
+    grid-column: span 1; /* Default span */
+}
+
+.card.wide {
+    grid-column: span 1; /* Default span */
+}
+
+/* Adjust span for larger screens if needed */
+@media (min-width: 900px) { /* Approximate breakpoint from image */
+    .grid-container {
+        /* Attempting to match the image layout:
+           Row 1: Suhu Panel (large, takes ~2/3), Suhu Ambien, Intensitas, Kelembaban
+           Row 2: Energi Panel (takes ~2/3), Tegangan, Arus, Daya
+           Row 3: Status Pendingin (wide, takes full width), Switch
+           This is tricky with auto-fit. Let's try a fixed column approach for this specific layout.
+        */
+        grid-template-columns: repeat(4, 1fr); /* 4 columns */
+    }
+    .card.large {
+        grid-column: span 2; /* Suhu Panel and Energi Panel take 2 columns */
+        grid-row: span 2; /* Suhu Panel takes 2 rows */
+    }
+     .card:nth-child(5) { /* Energi Panel */
+        grid-column: span 2;
+    }
+    .card.wide { /* Status Pendingin */
+        grid-column: span 3;
+    }
+    .card:nth-child(10) { /* Switch */
+        grid-column: span 1;
+    }
+}
+
+
+.card h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    color: #555;
+    font-weight: 600;
+}
+
+.card p {
+    font-size: 2em;
+    font-weight: 300;
+    margin: 0;
+    color: #2c3e50;
+}
+
+/* Gauge for Suhu Panel */
+.gauge-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    height: 150px; /* Adjust as needed */
+}
+
+.gauge {
+    width: 200px; /* Adjust as needed */
+    height: 100px; /* Half circle */
+    border-radius: 150px 150px 0 0;
+    background-color: #e9ecef;
+    position: relative;
+    overflow: hidden;
+    border: 10px solid #e9ecef; /* This creates the base grey arc */
+    box-sizing: border-box;
+}
+
+.gauge::before { /* This will be the green progress arc */
+    content: "";
+    position: absolute;
+    top: -10px; /* Offset by border width */
+    left: -10px; /* Offset by border width */
+    width: 200px; /* Match gauge width + 2*border */
+    height: 100px;
+    border-radius: 150px 150px 0 0;
+    box-sizing: border-box;
+    border: 10px solid transparent; /* Transparent inner part */
+    border-top-color: #28a745; /* Green progress */
+    border-right-color: #28a745; /* Green progress */
+    transform-origin: 50% 100%;
+    transform: rotate(45deg); /* Start position for the needle/arrow */
+    /* Clip path to make it an arc. This is complex.
+       A simpler way is to use a mask or multiple elements.
+       For now, let's use a simpler arrow approach.
+    */
+}
+
+
+.gauge-arrow {
+    width: 4px;
+    height: 90px; /* Length of the needle */
+    background-color: #343a40;
+    position: absolute;
+    bottom: 0px; /* Sits on the base of the half-circle */
+    left: 50%;
+    transform-origin: 50% 100%;
+    transform: translateX(-50%) rotate(-90deg); /* Initial position (pointing left) */
+    border-radius: 2px 2px 0 0;
+    z-index: 2;
+}
+
+.gauge-value {
+    position: absolute;
+    bottom: 10px; /* Position inside the gauge */
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.8em;
+    font-weight: bold;
+    color: #333;
+    z-index: 1;
+}
+
+.gauge-min-max {
+    display: flex;
+    justify-content: space-between;
+    width: 220px; /* Slightly wider than gauge */
+    margin-top: 5px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* Status Indicator for Pendingin */
+.status-indicator-container {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center based on image */
+    padding: 10px 0;
+}
+
+.status-indicator {
+    width: 30px;
+    height: 30px;
+    background-color: #dc3545; /* Default to OFF (red) or grey */
+    border-radius: 50%;
+    margin-right: 10px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.2);
+}
+
+.status-indicator.on {
+    background-color: #28a745; /* Green for ON */
+}
+
+#coolingStatusText {
+    font-size: 1.2em;
+    font-weight: 500;
+}
+
+
+/* Switch for Pendingin */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+    margin-top: 10px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #28a745; /* Green when checked */
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #28a745;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+footer {
+    text-align: center;
+    padding: 15px;
+    background-color: #e9ecef;
+    border-top: 1px solid #ddd;
+    font-size: 0.9em;
+    color: #666;
+}
