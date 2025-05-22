@@ -39,9 +39,9 @@ header h1 {
     font-weight: 500; /* Same as sensor-value */
     color: #00796b; /* Same as sensor-value */
     text-align: center; /* Center the datetime */
-    padding: 20px 0 10px 0; /* Add some padding, especially top */
-    margin: 0; /* Reset margin if any */
-    border-bottom: 1px solid #eee; /* Optional: a light separator */
+    padding: 15px 0; /* Adjusted padding */
+    margin: 0 25px; /* Add horizontal margin to align with main content padding */
+    /* border-bottom: 1px solid #eee; */ /* Removed border */
 }
 
 main {
