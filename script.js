@@ -34,7 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Fetched data:', data);
 
             // Update UI elements
-            updateGauge(data.panelTemp);
+            updateGauge(data.panelTemp); // This function seems incomplete for Chart.js, keeping it for now.
+            if (panelTempChart && data.panelTemp !== undefined) {
+                panelTempChart.data.datasets[0].data[0] = data.panelTemp;
+                panelTempChart.update();
+            }
             if (ambientTempValue) ambientTempValue.textContent = `${data.ambientTemp.toFixed(1)} °C`;
             if (lightIntensityValue) lightIntensityValue.textContent = `${data.lightIntensity.toFixed(0)} lx`;
             if (humidityValue) humidityValue.textContent = `${data.humidity.toFixed(0)} %`;
