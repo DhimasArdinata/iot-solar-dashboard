@@ -1,8 +1,8 @@
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     margin: 0;
-    background-color: #e0f2f1; /* Light Teal */
-    color: #2e7d32; /* Dark Green */
+    background-color: #f4f6f8; /* Lighter, more neutral background */
+    color: #333; /* Standard text color */
     display: flex;
     justify-content: center;
     align-items: flex-start;
@@ -13,43 +13,58 @@ body {
 
 .container {
     width: 100%;
-    max-width: 1200px;
-    background-color: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-width: 1300px; /* Slightly wider for a more spacious feel */
+    background-color: #ffffff;
+    border-radius: 16px; /* Softer corners */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); /* More pronounced shadow */
     overflow: hidden;
 }
 
 header {
-    background-color: #4caf50; /* Green */
+    background: linear-gradient(to right, #00796b, #004d40); /* Teal gradient */
     color: white;
-    padding: 25px;
-    text-align: center;
-    border-bottom: 2px solid #81c784;
+    padding: 30px 25px; /* Increased padding */
+    text-align: left; /* Align to left for a more professional look */
+    border-bottom: none; /* Remove border, gradient is enough */
 }
 
 header h1 {
     margin: 0;
-    font-size: 1.8em;
+    font-size: 2em; /* Larger title */
+    font-weight: 500; /* Medium weight */
+}
+
+.datetime-display { /* Style for the new datetime element */
+    font-size: 0.9em;
+    font-weight: 300;
+    margin-top: 8px;
+    text-align: left; /* Align with title */
+    color: #e0f2f1; /* Lighter teal for subtlety */
 }
 
 main {
-    padding: 20px;
+    padding: 25px; /* Consistent padding */
 }
 
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    padding: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Slightly larger min card width */
+    gap: 25px; /* Increased gap */
+    padding: 0; /* Remove padding here, main has it */
 }
 
 .card {
     background-color: #ffffff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    border: none;
+    padding: 25px; /* Increased padding */
+    border-radius: 12px; /* Softer corners for cards */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Softer shadow */
+    border: 1px solid #e0e0e0; /* Subtle border */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 .card.large {
@@ -63,29 +78,30 @@ main {
 /* Adjust span for larger screens if needed */
 @media (min-width: 768px) {
     .grid-container {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Keep consistent with base */
     }
+    /* Example: if you want specific cards to span more on medium screens */
+    /* .card.special-medium-span { grid-column: span 2; } */
+}
 
-    .card.large {
-        grid-column: span 2;
+@media (min-width: 1024px) { /* Adjusted breakpoint for 3 columns */
+    .grid-container {
+        grid-template-columns: repeat(3, 1fr);
     }
-
-    .card.wide {
-        grid-column: span 2;
+     .card.wide { /* Make wide cards span full width on 3-col layout */
+        grid-column: span 3;
     }
 }
 
-@media (min-width: 1200px) {
+
+@media (min-width: 1300px) { /* Adjusted breakpoint for 4 columns */
     .grid-container {
         grid-template-columns: repeat(4, 1fr);
     }
-
-    .card.large {
+    .card.large { /* Example: Large card spans 2 columns */
         grid-column: span 2;
-        grid-row: span 1;
     }
-
-    .card.wide {
+    .card.wide { /* Wide card spans full width */
         grid-column: span 4;
     }
 }
@@ -94,16 +110,19 @@ main {
 .card h2 {
     margin-top: 0;
     margin-bottom: 15px;
-    font-size: 1.2em;
-    color: #333;
-    font-weight: 500;
+    font-size: 1.1em; /* Slightly smaller, more refined */
+    color: #004d40; /* Dark Teal for headings */
+    font-weight: 600; /* Bolder */
+    border-bottom: 1px solid #e0e0e0; /* Separator for title */
+    padding-bottom: 10px;
 }
 
-.card p {
-    font-size: 1.8em;
-    font-weight: 400;
-    margin: 0;
-    color: #43a047; /* Darker Green */
+.sensor-value { /* Class added in HTML for sensor values */
+    font-size: 2.2em; /* Larger sensor values */
+    font-weight: 500; /* Medium weight */
+    margin: 10px 0 0 0; /* Add some top margin */
+    color: #00796b; /* Teal for sensor values */
+    text-align: right; /* Align values to the right */
 }
 
 /* Gauge for Suhu Panel */
@@ -170,7 +189,7 @@ main {
     transform: translateX(-50%);
     font-size: 1.8em;
     font-weight: bold;
-    color: #333;
+    color: #004d40; /* Dark Teal */
     z-index: 1;
 }
 
@@ -180,43 +199,52 @@ main {
     width: 220px; /* Slightly wider than gauge */
     margin-top: 5px;
     font-size: 0.9em;
-    color: #666;
+    color: #555; /* Darker grey */
 }
 
 /* Status Indicator for Pendingin */
 .status-indicator-container {
     display: flex;
     align-items: center;
-    justify-content: center; /* Center based on image */
-    padding: 10px 0;
+    justify-content: flex-start; /* Align to start */
+    padding: 15px 0; /* Increased padding */
 }
 
 .status-indicator {
-    width: 30px;
-    height: 30px;
-    background-color: #dc3545; /* Default to OFF (red) or grey */
+    width: 28px; /* Slightly smaller */
+    height: 28px;
+    background-color: #bdbdbd; /* Grey for OFF */
     border-radius: 50%;
-    margin-right: 10px;
-    box-shadow: 0 0 8px rgba(0,0,0,0.2);
+    margin-right: 12px; /* Increased margin */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    transition: background-color 0.3s ease;
 }
 
 .status-indicator.on {
-    background-color: #28a745; /* Green for ON */
+    background-color: #009688; /* Teal for ON */
+    box-shadow: 0 2px 6px rgba(0, 150, 136, 0.5); /* Glow effect */
 }
 
 #coolingStatusText {
-    font-size: 1.2em;
+    font-size: 1.1em; /* Adjusted size */
     font-weight: 500;
+    color: #333;
 }
 
 
 /* Switch for Pendingin */
+.switch-container { /* Added a container for better layout if needed */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* Align switch to the right */
+}
+
 .switch {
     position: relative;
     display: inline-block;
-    width: 60px;
-    height: 34px;
-    margin-top: 10px;
+    width: 50px; /* Smaller switch */
+    height: 28px;
+    margin-top: 0; /* Remove margin if using switch-container */
 }
 
 .switch input {
@@ -248,30 +276,34 @@ main {
 }
 
 input:checked + .slider {
-    background-color: #28a745; /* Green when checked */
+    background-color: #009688; /* Teal when checked */
 }
 
 input:focus + .slider {
-    box-shadow: 0 0 1px #28a745;
+    box-shadow: 0 0 2px #009688, 0 0 4px #00796b; /* Teal focus shadow */
 }
 
 input:checked + .slider:before {
-    transform: translateX(26px);
+    transform: translateX(22px); /* Adjusted for smaller switch */
 }
 
 .slider.round {
-    border-radius: 34px;
+    border-radius: 28px; /* Adjusted for smaller switch */
 }
 
 .slider.round:before {
     border-radius: 50%;
+    height: 20px; /* Adjusted for smaller switch */
+    width: 20px;  /* Adjusted for smaller switch */
+    bottom: 4px;   /* Adjusted for smaller switch */
+    left: 4px;     /* Adjusted for smaller switch */
 }
 
 footer {
     text-align: center;
-    padding: 15px;
-    background-color: #f1f8e9; /* Light Green */
-    border-top: 1px solid #a5d6a7;
+    padding: 20px; /* Increased padding */
+    background-color: #e0e0e0; /* Light Grey */
+    border-top: 1px solid #c0c0c0; /* Darker Grey border */
     font-size: 0.9em;
-    color: #558b2f; /* Olive Green */
+    color: #555; /* Darker text color */
 }

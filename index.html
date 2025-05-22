@@ -5,57 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solar Panel Cooling IoT Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- Chart.js and plugin scripts removed -->
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Solar Panel Cooling System</h1>
+            <h1>Solar Panel Cooling System Dashboard</h1>
+            <p id="datetimeValue" class="datetime-display">--</p>
         </header>
         <main>
             <div class="grid-container">
-                <div class="card"> <!-- Changed from "large" to "card" -->
+                <div class="card">
                     <h2>Suhu Panel</h2>
-                    <!-- Canvas removed, replaced with paragraph for text display -->
                     <p id="panelTempValue" class="sensor-value">-- °C</p>
                 </div>
 
                 <div class="card">
                     <h2>Suhu Ambien</h2>
-                    <p id="ambientTempValue" class="sensor-value">-- °C</p> <!-- Added class for consistency -->
+                    <p id="ambientTempValue" class="sensor-value">-- °C</p>
                 </div>
 
                 <div class="card">
                     <h2>Intensitas Cahaya</h2>
-                    <p id="lightIntensityValue" class="sensor-value">-- lx</p> <!-- Added class for consistency -->
+                    <p id="lightIntensityValue" class="sensor-value">-- lx</p>
                 </div>
 
                 <div class="card">
                     <h2>Kelembaban</h2>
-                    <p id="humidityValue" class="sensor-value">-- %</p> <!-- Added class for consistency -->
+                    <p id="humidityValue" class="sensor-value">-- %</p>
                 </div>
 
                 <div class="card">
                     <h2>Energi Panel</h2>
-                    <p id="panelEnergyValue" class="sensor-value">-- kWh</p> <!-- Added class for consistency -->
+                    <p id="panelEnergyValue" class="sensor-value">-- kWh</p>
                 </div>
 
                 <div class="card">
                     <h2>Tegangan Panel</h2>
-                    <p id="panelVoltageValue" class="sensor-value">-- V</p> <!-- Added class for consistency -->
+                    <p id="panelVoltageValue" class="sensor-value">-- V</p>
                 </div>
 
                 <div class="card">
                     <h2>Arus Panel</h2>
-                    <p id="panelCurrentValue" class="sensor-value">-- A</p> <!-- Added class for consistency -->
+                    <p id="panelCurrentValue" class="sensor-value">-- A</p>
                 </div>
 
                 <div class="card">
                     <h2>Daya Panel</h2>
-                    <p id="panelPowerValue" class="sensor-value">-- W</p> <!-- Added class for consistency -->
+                    <p id="panelPowerValue" class="sensor-value">-- W</p>
                 </div>
                 
-                <div class="card wide">
+                <div class="card wide"> <!-- This card will span more columns -->
                     <h2>Status Pendingin</h2>
                     <div class="status-indicator-container">
                         <div class="status-indicator" id="coolingStatusIndicator"></div>
@@ -65,10 +66,12 @@
 
                 <div class="card">
                     <h2>Switch Pendingin</h2>
-                    <label class="switch" for="coolingSwitch">
-                        <input type="checkbox" id="coolingSwitch" aria-label="Cooling System Switch">
-                        <span class="slider round"></span>
-                    </label>
+                    <div class="switch-container">
+                        <label class="switch" for="coolingSwitch">
+                            <input type="checkbox" id="coolingSwitch" aria-label="Cooling System Switch">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
                 </div>
             </div>
         </main>

@@ -1,8 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
-    // const panelTempGauge = document.getElementById('panelTempGauge'); // Removed
-    // let panelTempChart; // Removed
-    const panelTempValue = document.getElementById('panelTempValue'); // Added for text display
+    const panelTempValue = document.getElementById('panelTempValue');
     const ambientTempValue = document.getElementById('ambientTempValue');
     const lightIntensityValue = document.getElementById('lightIntensityValue');
     const humidityValue = document.getElementById('humidityValue');
@@ -10,22 +8,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const panelVoltageValue = document.getElementById('panelVoltageValue');
     const panelCurrentValue = document.getElementById('panelCurrentValue');
     const panelPowerValue = document.getElementById('panelPowerValue');
+    const datetimeValue = document.getElementById('datetimeValue'); // Added for datetime display
     const coolingStatusIndicator = document.getElementById('coolingStatusIndicator');
     const coolingStatusText = document.getElementById('coolingStatusText');
     const coolingSwitch = document.getElementById('coolingSwitch');
 
-    const API_URL = '/.netlify/functions/api/api/sensordata'; // Netlify Function URL
-    const CONTROL_API_URL = '/.netlify/functions/api/api/control'; // Netlify Function URL
+    const API_URL = '/.netlify/functions/api/api/sensordata'; 
+    const CONTROL_API_URL = '/.netlify/functions/api/api/control';
 
-    // function updateGauge(value) { // Removed as gauge is removed
-    //     const minTemp = 1;
-    //     const maxTemp = 80;
-    //     const percentage = Math.max(0, Math.min(100, ((value - minTemp) / (maxTemp - minTemp)) * 100));
-    //     const rotation = (percentage / 100) * 180 - 90;
-    // }
+    let totalEnergyJoules = 0; // Variable to accumulate energy in Joules
+    const FETCH_INTERVAL_SECONDS = 5; // Define fetch interval in seconds
+
+    // --- Update DateTime ---
+    function updateDateTime() {
+        if (datetimeValue) {
+            const now = new Date();
+            datetimeValue.textContent = now.toLocaleString(); // Or use any other preferred format
+        }
+    }
 
     // --- Fetch and Update Data ---
     async function fetchData() {
+        updateDateTime(); // Update date and time on each fetch
         try {
             const response = await fetch(API_URL);
             if (!response.ok) {
@@ -35,22 +39,41 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Fetched data:', data);
 
             // Update UI elements
-            if (panelTempValue && data.panelTemp !== undefined) { // Update panel temperature text
+            if (panelTempValue && data.panelTemp !== undefined) {
                 panelTempValue.textContent = `${data.panelTemp.toFixed(1)} °C`;
             }
-            // if (panelTempChart && data.panelTemp !== undefined) { // Chart.js logic removed
-            //     panelTempChart.data.datasets[0].data[0] = data.panelTemp;
-            //     panelTempChart.update();
-            // }
-            if (ambientTempValue) ambientTempValue.textContent = `${data.ambientTemp.toFixed(1)} °C`;
-            if (lightIntensityValue) lightIntensityValue.textContent = `${data.lightIntensity.toFixed(0)} lx`;
-            if (humidityValue) humidityValue.textContent = `${data.humidity.toFixed(0)} %`;
-            if (panelEnergyValue) panelEnergyValue.textContent = `${data.panelEnergy.toFixed(1)} kWh`;
-            if (panelVoltageValue) panelVoltageValue.textContent = `${data.panelVoltage.toFixed(1)} V`;
-            if (panelCurrentValue) panelCurrentValue.textContent = `${data.panelCurrent.toFixed(2)} A`;
-            if (panelPowerValue) panelPowerValue.textContent = `${data.panelPower.toFixed(1)} W`;
+            if (ambientTempValue && data.ambientTemp !== undefined) ambientTempValue.textContent = `${data.ambientTemp.toFixed(1)} °C`;
+            if (lightIntensityValue && data.lightIntensity !== undefined) lightIntensityValue.textContent = `${data.lightIntensity.toFixed(0)} lx`;
+            if (humidityValue && data.humidity !== undefined) humidityValue.textContent = `${data.humidity.toFixed(0)} %`;
+            // if (panelEnergyValue && data.panelEnergy !== undefined) panelEnergyValue.textContent = `${data.panelEnergy.toFixed(1)} kWh`; // Original energy
+            if (panelVoltageValue && data.panelVoltage !== undefined) panelVoltageValue.textContent = `${data.panelVoltage.toFixed(1)} V`;
+            if (panelCurrentValue && data.panelCurrent !== undefined) panelCurrentValue.textContent = `${data.panelCurrent.toFixed(2)} A`;
+            // if (panelPowerValue && data.panelPower !== undefined) panelPowerValue.textContent = `${data.panelPower.toFixed(1)} W`; // Original power
 
-            if (coolingStatusIndicator && coolingStatusText) {
+            // Calculate Power (P = V * I)
+            let currentPowerWatts = 0;
+            if (data.panelVoltage !== undefined && data.panelCurrent !== undefined) {
+                currentPowerWatts = data.panelVoltage * data.panelCurrent;
+                if (panelPowerValue) {
+                    panelPowerValue.textContent = `${currentPowerWatts.toFixed(1)} W`;
+                }
+            } else {
+                if (panelPowerValue) panelPowerValue.textContent = "N/A";
+            }
+
+            // Calculate and Accumulate Energy
+            // Energy increment in Joules = Power (Watts) * Time (seconds)
+            const energyIncrementJoules = currentPowerWatts * FETCH_INTERVAL_SECONDS;
+            totalEnergyJoules += energyIncrementJoules;
+            
+            // Convert total energy from Joules to kWh (1 kWh = 3,600,000 J)
+            const totalEnergyKWh = totalEnergyJoules / 3600000;
+            if (panelEnergyValue) {
+                panelEnergyValue.textContent = `${totalEnergyKWh.toFixed(3)} kWh`; // Display with more precision
+            }
+
+
+            if (coolingStatusIndicator && coolingStatusText && data.coolingStatus !== undefined) {
                 if (data.coolingStatus) {
                     coolingStatusIndicator.classList.add('on');
                     coolingStatusText.textContent = 'ON';
@@ -59,16 +82,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     coolingStatusText.textContent = 'OFF';
                 }
             }
-            if (coolingSwitch) {
-                coolingSwitch.checked = data.coolingStatus; // This might represent manual override state
-                                                            // or actual cooler state depending on backend logic
+            if (coolingSwitch && data.coolingStatus !== undefined) {
+                coolingSwitch.checked = data.coolingStatus;
             }
 
         } catch (error) {
             console.error("Could not fetch sensor data:", error);
-            // Display error message or fallback data
-            if (panelTempValue) panelTempValue.textContent = "Error"; // Now panelTempValue is defined
-            // ... update other fields to show error or N/A
+            // Display error message or fallback data for all fields
+            const errorText = "N/A";
+            if (panelTempValue) panelTempValue.textContent = errorText;
+            if (ambientTempValue) ambientTempValue.textContent = errorText;
+            if (lightIntensityValue) lightIntensityValue.textContent = errorText;
+            if (humidityValue) humidityValue.textContent = errorText;
+            if (panelEnergyValue) panelEnergyValue.textContent = errorText;
+            if (panelVoltageValue) panelVoltageValue.textContent = errorText;
+            if (panelCurrentValue) panelCurrentValue.textContent = errorText;
+            if (panelPowerValue) panelPowerValue.textContent = errorText;
+            if (coolingStatusText) coolingStatusText.textContent = "Error";
+            if (coolingStatusIndicator) coolingStatusIndicator.classList.remove('on');
         }
     }
 
@@ -90,13 +121,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const result = await response.json();
             console.log('Control command result:', result);
-            // Optionally, update UI based on backend confirmation
-            // For now, we assume the switch reflects the desired state immediately
-            // and fetchData will update with the actual state.
+            // Optionally, update UI based on backend confirmation.
+            // For now, fetchData will update with the actual state.
+            // Consider adding immediate visual feedback if the backend confirms quickly.
         } catch (error) {
             console.error("Error sending control command:", error);
-            // Revert switch if command failed? Or show error.
-            // coolingSwitch.checked = !newState; // Example: revert on error
+            // Revert switch and notify user if command failed
+            coolingSwitch.checked = !newState; 
+            // alert("Failed to update cooling status. Please try again."); // Basic alert, consider a more subtle notification
+            // For a more professional UI, a small, non-blocking notification (toast) would be better than an alert.
+            // For now, just reverting the switch is a simple feedback mechanism.
+            if (coolingStatusIndicator && coolingStatusText) { // Also revert visual status indicator
+                if (coolingSwitch.checked) {
+                    coolingStatusIndicator.classList.add('on');
+                    coolingStatusText.textContent = 'ON';
+                } else {
+                    coolingStatusIndicator.classList.remove('on');
+                    coolingStatusText.textContent = 'OFF';
+                }
+            }
         }
     }
 
@@ -104,55 +147,10 @@ document.addEventListener('DOMContentLoaded', () => {
         coolingSwitch.addEventListener('change', handleCoolingSwitchChange);
     }
 
-    // function initializeChart() { // Removed
-    //     panelTempChart = new Chart(panelTempGauge, {
-    //         type: 'radialGauge',
-    //         data: {
-    //             datasets: [{
-    //                 data: [0],
-    //                 backgroundColor: ['rgba(77, 208, 225, 0.8)'],
-    //                 borderWidth: 0,
-    //             }]
-    //         },
-    //         options: {
-    //             responsive: true,
-    //             maintainAspectRatio: false,
-    //             plugins: {
-    //                 legend: {
-    //                     display: false
-    //                 },
-    //                 tooltip: {
-    //                     enabled: false
-    //                 }
-    //             },
-    //             scales: {
-    //                 r: {
-    //                     min: 1,
-    //                     max: 80,
-    //                     axis: 'r',
-    //                     ticks: {
-    //                         display: true,
-    //                         stepSize: 10,
-    //                         color: '#666',
-    //                         z: 1
-    //                     },
-    //                     grid: {
-    //                         color: '#ccc',
-    //                         circular: true
-    //                     },
-    //                     pointLabels: {
-    //                         display: false
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     });
-    // }
-
-    // Initial data fetch
-    // initializeChart(); // Removed
-    fetchData();
+    // Initial data fetch and datetime update
+    fetchData(); 
+    updateDateTime(); // Initial call to set datetime immediately
 
     // Fetch data periodically
-    setInterval(fetchData, 5000); // Fetch every 5 seconds
+    setInterval(fetchData, FETCH_INTERVAL_SECONDS * 1000); // Fetch every FETCH_INTERVAL_SECONDS
 });
