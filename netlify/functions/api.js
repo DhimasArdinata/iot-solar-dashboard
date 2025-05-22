@@ -167,17 +167,14 @@ const handler = serverless(app);
 
 // Netlify handler function
 exports.handler = async (event, context) => {
-    // You can add any specific pre-processing for the event or context here if needed
-    // For example, ensuring the path is correctly interpreted by Express
-    // if (event.path.startsWith('/.netlify/functions/api')) {
-    //     event.path = event.path.substring('/.netlify/functions/api'.length) || '/';
-    // }
-    // console.log('Modified event path:', event.path);
-
-    // It's good practice to set a base path if your function is not at the root
-    // However, serverless-http usually handles path resolution well.
-    // If you have issues with routing, you might need to adjust `event.path`
-    // or use Express Routers with base paths.
+  // strip Netlify’s function prefix so Express sees “/api/update” instead of “/.netlify/functions/api/api/update”
+  if (event.path.startsWith('/.netlify/functions/api')) {
+    event.path = event.path.replace(/^\/\.netlify\/functions\/api/, '');
+  }
+  if (event.path === '') { // After stripping, if path is empty, make it '/' for Express root
+    event.path = '/';
+  }
+  // console.log('Modified event path for Express:', event.path);
 
     try {
         const result = await handler(event, context);
