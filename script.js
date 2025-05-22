@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Fetched data:', data);
 
             // Update UI elements
-            updateGauge(data.panelTemp); // This function seems incomplete for Chart.js, keeping it for now.
+            // updateGauge(data.panelTemp); // Removed as Chart.js handles the gauge display directly.
             if (panelTempChart && data.panelTemp !== undefined) {
                 panelTempChart.data.datasets[0].data[0] = data.panelTemp;
                 panelTempChart.update();
@@ -64,7 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Could not fetch sensor data:", error);
             // Display error message or fallback data
-            if (panelTempValue) panelTempValue.textContent = "Error";
+            // if (panelTempValue) panelTempValue.textContent = "Error"; // Removed: panelTempValue is not defined
+            // Consider adding a general error display element if needed for fetch errors.
             // ... update other fields to show error or N/A
         }
     }
