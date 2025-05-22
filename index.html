@@ -4,9 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solar Panel Cooling IoT Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    
+    <!-- 1) Core Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- 2) UMD radial gauge plugin (exposes `window.ChartRadialGauge`) -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-radial-gauge@latest/build/chartjs-chart-radial-gauge.min.js"></script>
+    
+    <!-- 3) Register the plugin in one shot -->
+    <script>
+      const plugin = window.ChartRadialGauge?.default || window.ChartRadialGauge;
+      if (plugin) {
+        Chart.register(plugin);
+        console.log('✅ RadialGauge plugin registered');
+      } else {
+        console.error('❌ RadialGauge plugin not found on window');
+      }
+    </script>
+    
+    <!-- 4) Your CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
@@ -78,6 +95,8 @@
             <p>IoT Dashboard v1.0</p>
         </footer>
     </div>
+    
+    <!-- 5) Finally load your script.js that calls new Chart() -->
     <script src="script.js"></script>
 </body>
 </html>
