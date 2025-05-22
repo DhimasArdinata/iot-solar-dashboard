@@ -10,9 +10,9 @@
 </head>
 <body>
     <div class="container">
+        <p id="datetimeValue" class="datetime-display">--</p> <!-- Moved here -->
         <header>
             <h1>Solar Panel Cooling System Dashboard</h1>
-            <p id="datetimeValue" class="datetime-display">--</p>
         </header>
         <main>
             <div class="grid-container">
@@ -56,7 +56,7 @@
                     <p id="panelPowerValue" class="sensor-value">-- W</p>
                 </div>
                 
-                <div class="card wide"> <!-- This card will span more columns -->
+                <div class="card"> <!-- Removed "wide" class -->
                     <h2>Status Pendingin</h2>
                     <div class="status-indicator-container">
                         <div class="status-indicator" id="coolingStatusIndicator"></div>

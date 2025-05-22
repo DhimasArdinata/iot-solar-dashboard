@@ -35,11 +35,13 @@ header h1 {
 }
 
 .datetime-display { /* Style for the new datetime element */
-    font-size: 0.9em;
-    font-weight: 300;
-    margin-top: 8px;
-    text-align: left; /* Align with title */
-    color: #e0f2f1; /* Lighter teal for subtlety */
+    font-size: 2.2em; /* Same as sensor-value */
+    font-weight: 500; /* Same as sensor-value */
+    color: #00796b; /* Same as sensor-value */
+    text-align: center; /* Center the datetime */
+    padding: 20px 0 10px 0; /* Add some padding, especially top */
+    margin: 0; /* Reset margin if any */
+    border-bottom: 1px solid #eee; /* Optional: a light separator */
 }
 
 main {
