@@ -1,3 +1,4 @@
+/* Light Theme (Default) */
 body {
     font-family: 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     margin: 0;
@@ -9,59 +10,62 @@ body {
     min-height: 100vh;
     padding: 20px;
     box-sizing: border-box;
+    transition: background-color 0.3s ease, color 0.3s ease; /* For theme toggle */
 }
 
 .container {
     width: 100%;
-    max-width: 1300px; /* Slightly wider for a more spacious feel */
+    max-width: 1300px;
     background-color: #ffffff;
-    border-radius: 16px; /* Softer corners */
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); /* More pronounced shadow */
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* For theme toggle */
 }
 
 header {
     background: linear-gradient(to right, #00796b, #004d40); /* Teal gradient */
     color: white;
-    padding: 30px 25px; /* Increased padding */
-    text-align: left; /* Align to left for a more professional look */
-    border-bottom: none; /* Remove border, gradient is enough */
+    padding: 30px 25px;
+    text-align: left;
+    border-bottom: none;
+    transition: background-color 0.3s ease, color 0.3s ease; /* For theme toggle */
 }
 
 header h1 {
     margin: 0;
-    font-size: 2em; /* Larger title */
-    font-weight: 500; /* Medium weight */
+    font-size: 2em;
+    font-weight: 500;
 }
 
-.datetime-display { /* Style for the new datetime element */
-    font-size: 2.2em; /* Same as sensor-value */
-    font-weight: 500; /* Same as sensor-value */
-    color: #00796b; /* Same as sensor-value */
-    text-align: center; /* Center the datetime */
-    padding: 15px 0; /* Adjusted padding */
-    margin: 0 25px; /* Add horizontal margin to align with main content padding */
-    /* border-bottom: 1px solid #eee; */ /* Removed border */
+.datetime-display {
+    font-size: 2.2em;
+    font-weight: 500;
+    color: #00796b;
+    text-align: center;
+    padding: 15px 0;
+    margin: 0 25px;
+    transition: color 0.3s ease; /* For theme toggle */
 }
 
 main {
-    padding: 25px; /* Consistent padding */
+    padding: 25px;
 }
 
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Slightly larger min card width */
-    gap: 25px; /* Increased gap */
-    padding: 0; /* Remove padding here, main has it */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    padding: 0;
 }
 
 .card {
     background-color: #ffffff;
-    padding: 25px; /* Increased padding */
-    border-radius: 12px; /* Softer corners for cards */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Softer shadow */
-    border: 1px solid #e0e0e0; /* Subtle border */
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e0e0e0;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s ease, border-color 0.3s ease; /* For theme toggle */
 }
 
 .card:hover {
@@ -70,183 +74,174 @@ main {
 }
 
 .card.large {
-    grid-column: span 1; /* Default span */
+    grid-column: span 1;
 }
 
 .card.wide {
-    grid-column: span 1; /* Default span */
+    grid-column: span 1;
 }
 
-/* Adjust span for larger screens if needed */
 @media (min-width: 768px) {
     .grid-container {
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Keep consistent with base */
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     }
-    /* Example: if you want specific cards to span more on medium screens */
-    /* .card.special-medium-span { grid-column: span 2; } */
 }
 
-@media (min-width: 1024px) { /* Adjusted breakpoint for 3 columns */
+@media (min-width: 1024px) {
     .grid-container {
         grid-template-columns: repeat(3, 1fr);
     }
-     .card.wide { /* Make wide cards span full width on 3-col layout */
+     .card.wide {
         grid-column: span 3;
     }
 }
 
-
-@media (min-width: 1300px) { /* Adjusted breakpoint for 4 columns */
+@media (min-width: 1300px) {
     .grid-container {
         grid-template-columns: repeat(4, 1fr);
     }
-    .card.large { /* Example: Large card spans 2 columns */
+    .card.large {
         grid-column: span 2;
     }
-    .card.wide { /* Wide card spans full width */
+    .card.wide {
         grid-column: span 4;
     }
 }
 
-
 .card h2 {
     margin-top: 0;
     margin-bottom: 15px;
-    font-size: 1.1em; /* Slightly smaller, more refined */
-    color: #004d40; /* Dark Teal for headings */
-    font-weight: 600; /* Bolder */
-    border-bottom: 1px solid #e0e0e0; /* Separator for title */
+    font-size: 1.1em;
+    color: #004d40;
+    font-weight: 600;
+    border-bottom: 1px solid #e0e0e0;
     padding-bottom: 10px;
+    transition: color 0.3s ease, border-color 0.3s ease; /* For theme toggle */
 }
 
-.sensor-value { /* Class added in HTML for sensor values */
-    font-size: 2.2em; /* Larger sensor values */
-    font-weight: 500; /* Medium weight */
-    margin: 10px 0 0 0; /* Add some top margin */
-    color: #00796b; /* Teal for sensor values */
-    text-align: right; /* Align values to the right */
+.sensor-value {
+    font-size: 2.2em;
+    font-weight: 500;
+    margin: 10px 0 0 0;
+    color: #00796b;
+    text-align: right;
+    transition: color 0.3s ease; /* For theme toggle */
 }
 
-/* Gauge for Suhu Panel */
 .gauge-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     position: relative;
-    height: 150px; /* Adjust as needed */
+    height: 150px;
 }
 
 .gauge {
-    width: 200px; /* Adjust as needed */
-    height: 100px; /* Half circle */
+    width: 200px;
+    height: 100px;
     border-radius: 150px 150px 0 0;
-    background-color: #f0f4c3; /* Light Yellow */
+    background-color: #f0f4c3;
     position: relative;
     overflow: hidden;
-    border: 12px solid #f0f4c3; /* This creates the base yellow arc */
+    border: 12px solid #f0f4c3;
     box-sizing: border-box;
-    transition: transform 0.3s ease; /* Smooth transition for the gauge */
+    transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease; /* For theme toggle */
 }
 
-.gauge::before { /* This will be the green progress arc */
+.gauge::before {
     content: "";
     position: absolute;
-    top: -10px; /* Offset by border width */
-    left: -10px; /* Offset by border width */
-    width: 200px; /* Match gauge width + 2*border */
+    top: -10px;
+    left: -10px;
+    width: 200px;
     height: 100px;
     border-radius: 150px 150px 0 0;
     box-sizing: border-box;
-    border: 12px solid transparent; /* Transparent inner part */
-    border-top-color: #8bc34a; /* Lime Green progress */
-    border-right-color: #8bc34a; /* Lime Green progress */
+    border: 12px solid transparent;
+    border-top-color: #8bc34a;
+    border-right-color: #8bc34a;
     transform-origin: 50% 100%;
-    transform: rotate(45deg); /* Start position for the needle/arrow */
-    transition: transform 0.3s ease; /* Smooth transition for the arc */
-    /* Clip path to make it an arc. This is complex.
-       A simpler way is to use a mask or multiple elements.
-       For now, let's use a simpler arrow approach.
-    */
+    transform: rotate(45deg);
+    transition: transform 0.3s ease, border-top-color 0.3s ease, border-right-color 0.3s ease; /* For theme toggle */
 }
-
 
 .gauge-arrow {
     width: 4px;
-    height: 90px; /* Length of the needle */
-    background-color: #689f38; /* Dark Lime Green */
+    height: 90px;
+    background-color: #689f38;
     position: absolute;
-    bottom: 0px; /* Sits on the base of the half-circle */
+    bottom: 0px;
     left: 50%;
     transform-origin: 50% 100%;
-    transform: translateX(-50%) rotate(-90deg); /* Initial position (pointing left) */
+    transform: translateX(-50%) rotate(-90deg);
     border-radius: 3px 3px 0 0;
     z-index: 2;
-    transition: transform 0.3s ease; /* Smooth transition for the needle */
+    transition: transform 0.3s ease, background-color 0.3s ease; /* For theme toggle */
 }
 
 .gauge-value {
     position: absolute;
-    bottom: 10px; /* Position inside the gauge */
+    bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
     font-size: 1.8em;
     font-weight: bold;
-    color: #004d40; /* Dark Teal */
+    color: #004d40;
     z-index: 1;
+    transition: color 0.3s ease; /* For theme toggle */
 }
 
 .gauge-min-max {
     display: flex;
     justify-content: space-between;
-    width: 220px; /* Slightly wider than gauge */
+    width: 220px;
     margin-top: 5px;
     font-size: 0.9em;
-    color: #555; /* Darker grey */
+    color: #555;
+    transition: color 0.3s ease; /* For theme toggle */
 }
 
-/* Status Indicator for Pendingin */
 .status-indicator-container {
     display: flex;
     align-items: center;
-    justify-content: flex-start; /* Align to start */
-    padding: 15px 0; /* Increased padding */
+    justify-content: flex-start;
+    padding: 15px 0;
 }
 
 .status-indicator {
-    width: 28px; /* Slightly smaller */
+    width: 28px;
     height: 28px;
     background-color: #bdbdbd; /* Grey for OFF */
     border-radius: 50%;
-    margin-right: 12px; /* Increased margin */
+    margin-right: 12px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* For theme toggle */
 }
 
 .status-indicator.on {
     background-color: #009688; /* Teal for ON */
-    box-shadow: 0 2px 6px rgba(0, 150, 136, 0.5); /* Glow effect */
+    box-shadow: 0 2px 6px rgba(0, 150, 136, 0.5);
 }
 
 #coolingStatusText {
-    font-size: 1.1em; /* Adjusted size */
+    font-size: 1.1em;
     font-weight: 500;
     color: #333;
+    transition: color 0.3s ease; /* For theme toggle */
 }
 
-
-/* Switch for Pendingin */
-.switch-container { /* Added a container for better layout if needed */
+.switch-container {
     display: flex;
     align-items: center;
-    justify-content: flex-end; /* Align switch to the right */
+    justify-content: flex-end;
 }
 
 .switch {
     position: relative;
     display: inline-block;
-    width: 50px; /* Smaller switch */
+    width: 50px;
     height: 28px;
-    margin-top: 0; /* Remove margin if using switch-container */
+    margin-top: 0;
 }
 
 .switch input {
@@ -282,30 +277,204 @@ input:checked + .slider {
 }
 
 input:focus + .slider {
-    box-shadow: 0 0 2px #009688, 0 0 4px #00796b; /* Teal focus shadow */
+    box-shadow: 0 0 2px #009688, 0 0 4px #00796b;
 }
 
 input:checked + .slider:before {
-    transform: translateX(22px); /* Adjusted for smaller switch */
+    transform: translateX(22px);
 }
 
 .slider.round {
-    border-radius: 28px; /* Adjusted for smaller switch */
+    border-radius: 28px;
 }
 
 .slider.round:before {
     border-radius: 50%;
-    height: 20px; /* Adjusted for smaller switch */
-    width: 20px;  /* Adjusted for smaller switch */
-    bottom: 4px;   /* Adjusted for smaller switch */
-    left: 4px;     /* Adjusted for smaller switch */
+    height: 20px;
+    width: 20px;
+    bottom: 4px;
+    left: 4px;
 }
 
 footer {
     text-align: center;
-    padding: 20px; /* Increased padding */
-    background-color: #e0e0e0; /* Light Grey */
-    border-top: 1px solid #c0c0c0; /* Darker Grey border */
+    padding: 20px;
+    background-color: #e0e0e0;
+    border-top: 1px solid #c0c0c0;
     font-size: 0.9em;
-    color: #555; /* Darker text color */
+    color: #555;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; /* For theme toggle */
+}
+
+/* Dark Theme Overrides */
+body.dark-theme {
+    background-color: #22272e;
+    color: #c9d1d9;
+}
+
+body.dark-theme .container {
+    background-color: #2d333b;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-theme header {
+    background: linear-gradient(to right, #004d40, #00251a);
+    color: #e6edf3;
+}
+
+body.dark-theme .datetime-display {
+    color: #39c6b7;
+}
+
+body.dark-theme .card {
+    background-color: #22272e;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1px solid #444c56;
+}
+
+body.dark-theme .card:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-theme .card h2 {
+    color: #89ddff;
+    border-bottom: 1px solid #444c56;
+}
+
+body.dark-theme .sensor-value {
+    color: #79c0ff;
+}
+
+body.dark-theme .gauge {
+    background-color: #30363d;
+    border: 12px solid #30363d;
+}
+
+body.dark-theme .gauge::before {
+    border-top-color: #3fb950;
+    border-right-color: #3fb950;
+}
+
+body.dark-theme .gauge-arrow {
+    background-color: #2da042;
+}
+
+body.dark-theme .gauge-value {
+    color: #c9d1d9;
+}
+
+body.dark-theme .gauge-min-max {
+    color: #8b949e;
+}
+
+body.dark-theme .status-indicator {
+    background-color: #444c56;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+body.dark-theme .status-indicator.on {
+    background-color: #3fb950;
+    box-shadow: 0 2px 6px rgba(63, 185, 80, 0.5);
+}
+
+body.dark-theme #coolingStatusText {
+    color: #c9d1d9;
+}
+
+body.dark-theme .slider {
+    background-color: #444c56;
+}
+
+body.dark-theme .slider:before {
+    background-color: #8b949e;
+}
+
+body.dark-theme input:checked + .slider {
+    background-color: #3fb950;
+}
+
+body.dark-theme input:focus + .slider {
+    box-shadow: 0 0 2px #3fb950, 0 0 4px #2da042;
+}
+
+body.dark-theme footer {
+    background-color: #1e2227;
+    border-top: 1px solid #444c56;
+    color: #8b949e;
+}
+
+/* Theme Switcher Styles (add this at the end) */
+.theme-switch-wrapper {
+    display: flex;
+    align-items: center;
+    position: absolute; /* Or fixed, depending on desired placement */
+    top: 20px;
+    right: 25px;
+    z-index: 1000; /* Ensure it's above other elements */
+}
+
+.theme-switch-wrapper em {
+    margin-left: 10px;
+    font-size: 1rem;
+    color: #fff; /* Default light color, will be overridden by dark theme if body.dark-theme is active */
+}
+
+body.dark-theme .theme-switch-wrapper em {
+    color: #e6edf3; /* Text color for dark theme */
+}
+
+
+.theme-switch {
+    display: inline-block;
+    height: 24px; /* Smaller switch */
+    position: relative;
+    width: 44px; /* Smaller switch */
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-slider {
+    background-color: #ccc;
+    bottom: 0;
+    cursor: pointer;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    transition: .4s;
+}
+
+.theme-slider:before {
+    background-color: #fff;
+    bottom: 3px; /* Adjusted for smaller switch */
+    content: "";
+    height: 18px; /* Adjusted */
+    left: 3px;  /* Adjusted */
+    position: absolute;
+    transition: .4s;
+    width: 18px; /* Adjusted */
+}
+
+input:checked + .theme-slider {
+    background-color: #00796b; /* Teal, or a color suitable for dark theme toggle */
+}
+body.dark-theme input:checked + .theme-slider {
+    background-color: #39c6b7; /* Lighter teal for dark mode */
+}
+
+
+input:checked + .theme-slider:before {
+    transform: translateX(20px); /* Adjusted */
+}
+
+.theme-slider.round {
+    border-radius: 24px; /* Adjusted */
+}
+
+.theme-slider.round:before {
+    border-radius: 50%;
 }

@@ -12,8 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const coolingStatusIndicator = document.getElementById('coolingStatusIndicator');
     const coolingStatusText = document.getElementById('coolingStatusText');
     const coolingSwitch = document.getElementById('coolingSwitch');
+    const themeToggleCheckbox = document.getElementById('themeToggleCheckbox');
 
-    const API_URL = '/.netlify/functions/api/api/sensordata'; 
+    const API_URL = '/.netlify/functions/api/api/sensordata';
     const CONTROL_API_URL = '/.netlify/functions/api/api/control';
 
     let totalEnergyJoules = 0; // Variable to accumulate energy in Joules
@@ -153,4 +154,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Fetch data periodically
     setInterval(fetchData, FETCH_INTERVAL_SECONDS * 1000); // Fetch every FETCH_INTERVAL_SECONDS
+
+    // --- Theme Switcher Logic ---
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            document.body.classList.add('dark-theme');
+            if (themeToggleCheckbox) themeToggleCheckbox.checked = true;
+        } else {
+            document.body.classList.remove('dark-theme');
+            if (themeToggleCheckbox) themeToggleCheckbox.checked = false;
+        }
+    }
+
+    function toggleTheme() {
+        const currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+    }
+
+    if (themeToggleCheckbox) {
+        themeToggleCheckbox.addEventListener('change', toggleTheme);
+    }
+
+    // Load saved theme from localStorage
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        applyTheme(savedTheme);
+    } else {
+        // Optional: Detect system preference if no theme is saved
+        // if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        //     applyTheme('dark');
+        // } else {
+        //     applyTheme('light'); // Default to light if no preference
+        // }
+        applyTheme('light'); // Default to light if no preference or not detecting system pref
+    }
 });
