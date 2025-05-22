@@ -1,7 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
-    const panelTempGauge = document.getElementById('panelTempGauge');
-    let panelTempChart;
+    // const panelTempGauge = document.getElementById('panelTempGauge'); // Removed
+    // let panelTempChart; // Removed
+    const panelTempValue = document.getElementById('panelTempValue'); // Added for text display
     const ambientTempValue = document.getElementById('ambientTempValue');
     const lightIntensityValue = document.getElementById('lightIntensityValue');
     const humidityValue = document.getElementById('humidityValue');
@@ -16,12 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const API_URL = '/.netlify/functions/api/api/sensordata'; // Netlify Function URL
     const CONTROL_API_URL = '/.netlify/functions/api/api/control'; // Netlify Function URL
 
-    function updateGauge(value) {
-        const minTemp = 1;
-        const maxTemp = 80;
-        const percentage = Math.max(0, Math.min(100, ((value - minTemp) / (maxTemp - minTemp)) * 100));
-        const rotation = (percentage / 100) * 180 - 90;
-    }
+    // function updateGauge(value) { // Removed as gauge is removed
+    //     const minTemp = 1;
+    //     const maxTemp = 80;
+    //     const percentage = Math.max(0, Math.min(100, ((value - minTemp) / (maxTemp - minTemp)) * 100));
+    //     const rotation = (percentage / 100) * 180 - 90;
+    // }
 
     // --- Fetch and Update Data ---
     async function fetchData() {
@@ -34,11 +35,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Fetched data:', data);
 
             // Update UI elements
-            // updateGauge(data.panelTemp); // Removed as Chart.js handles the gauge display directly.
-            if (panelTempChart && data.panelTemp !== undefined) {
-                panelTempChart.data.datasets[0].data[0] = data.panelTemp;
-                panelTempChart.update();
+            if (panelTempValue && data.panelTemp !== undefined) { // Update panel temperature text
+                panelTempValue.textContent = `${data.panelTemp.toFixed(1)} °C`;
             }
+            // if (panelTempChart && data.panelTemp !== undefined) { // Chart.js logic removed
+            //     panelTempChart.data.datasets[0].data[0] = data.panelTemp;
+            //     panelTempChart.update();
+            // }
             if (ambientTempValue) ambientTempValue.textContent = `${data.ambientTemp.toFixed(1)} °C`;
             if (lightIntensityValue) lightIntensityValue.textContent = `${data.lightIntensity.toFixed(0)} lx`;
             if (humidityValue) humidityValue.textContent = `${data.humidity.toFixed(0)} %`;
@@ -64,8 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Could not fetch sensor data:", error);
             // Display error message or fallback data
-            // if (panelTempValue) panelTempValue.textContent = "Error"; // Removed: panelTempValue is not defined
-            // Consider adding a general error display element if needed for fetch errors.
+            if (panelTempValue) panelTempValue.textContent = "Error"; // Now panelTempValue is defined
             // ... update other fields to show error or N/A
         }
     }
@@ -102,53 +104,53 @@ document.addEventListener('DOMContentLoaded', () => {
         coolingSwitch.addEventListener('change', handleCoolingSwitchChange);
     }
 
-    function initializeChart() {
-        panelTempChart = new Chart(panelTempGauge, {
-            type: 'radialGauge',
-            data: {
-                datasets: [{
-                    data: [0],
-                    backgroundColor: ['rgba(77, 208, 225, 0.8)'],
-                    borderWidth: 0,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        enabled: false
-                    }
-                },
-                scales: {
-                    r: {
-                        min: 1,
-                        max: 80,
-                        axis: 'r',
-                        ticks: {
-                            display: true,
-                            stepSize: 10,
-                            color: '#666',
-                            z: 1
-                        },
-                        grid: {
-                            color: '#ccc',
-                            circular: true
-                        },
-                        pointLabels: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
-    }
+    // function initializeChart() { // Removed
+    //     panelTempChart = new Chart(panelTempGauge, {
+    //         type: 'radialGauge',
+    //         data: {
+    //             datasets: [{
+    //                 data: [0],
+    //                 backgroundColor: ['rgba(77, 208, 225, 0.8)'],
+    //                 borderWidth: 0,
+    //             }]
+    //         },
+    //         options: {
+    //             responsive: true,
+    //             maintainAspectRatio: false,
+    //             plugins: {
+    //                 legend: {
+    //                     display: false
+    //                 },
+    //                 tooltip: {
+    //                     enabled: false
+    //                 }
+    //             },
+    //             scales: {
+    //                 r: {
+    //                     min: 1,
+    //                     max: 80,
+    //                     axis: 'r',
+    //                     ticks: {
+    //                         display: true,
+    //                         stepSize: 10,
+    //                         color: '#666',
+    //                         z: 1
+    //                     },
+    //                     grid: {
+    //                         color: '#ccc',
+    //                         circular: true
+    //                     },
+    //                     pointLabels: {
+    //                         display: false
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     });
+    // }
 
     // Initial data fetch
-    initializeChart();
+    // initializeChart(); // Removed
     fetchData();
 
     // Fetch data periodically

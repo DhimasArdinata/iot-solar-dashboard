@@ -4,26 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solar Panel Cooling IoT Dashboard</title>
-    
-    <!-- 1) Core Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- 2) UMD radial gauge plugin (exposes `window.ChartRadialGauge`) -->
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-radial-gauge@latest/build/chartjs-chart-radial-gauge.min.js"></script>
-    
-    <!-- 3) Register the plugin in one shot -->
-    <script>
-      const plugin = window.ChartRadialGauge?.default || window.ChartRadialGauge;
-      if (plugin) {
-        Chart.register(plugin);
-        console.log('✅ RadialGauge plugin registered');
-      } else {
-        console.error('❌ RadialGauge plugin not found on window');
-      }
-    </script>
-    
-    <!-- 4) Your CSS -->
     <link rel="stylesheet" href="style.css">
+    <!-- Chart.js and plugin scripts removed -->
 </head>
 <body>
     <div class="container">
@@ -32,46 +14,45 @@
         </header>
         <main>
             <div class="grid-container">
-                <div class="card large">
+                <div class="card"> <!-- Changed from "large" to "card" -->
                     <h2>Suhu Panel</h2>
-                    <div class="gauge-container">
-                        <canvas id="panelTempGauge"></canvas>
-                    </div>
+                    <!-- Canvas removed, replaced with paragraph for text display -->
+                    <p id="panelTempValue" class="sensor-value">-- °C</p>
                 </div>
 
                 <div class="card">
                     <h2>Suhu Ambien</h2>
-                    <p id="ambientTempValue">-- °C</p>
+                    <p id="ambientTempValue" class="sensor-value">-- °C</p> <!-- Added class for consistency -->
                 </div>
 
                 <div class="card">
                     <h2>Intensitas Cahaya</h2>
-                    <p id="lightIntensityValue">-- lx</p>
+                    <p id="lightIntensityValue" class="sensor-value">-- lx</p> <!-- Added class for consistency -->
                 </div>
 
                 <div class="card">
                     <h2>Kelembaban</h2>
-                    <p id="humidityValue">-- %</p>
+                    <p id="humidityValue" class="sensor-value">-- %</p> <!-- Added class for consistency -->
                 </div>
 
                 <div class="card">
                     <h2>Energi Panel</h2>
-                    <p id="panelEnergyValue">-- kWh</p>
+                    <p id="panelEnergyValue" class="sensor-value">-- kWh</p> <!-- Added class for consistency -->
                 </div>
 
                 <div class="card">
                     <h2>Tegangan Panel</h2>
-                    <p id="panelVoltageValue">-- V</p>
+                    <p id="panelVoltageValue" class="sensor-value">-- V</p> <!-- Added class for consistency -->
                 </div>
 
                 <div class="card">
                     <h2>Arus Panel</h2>
-                    <p id="panelCurrentValue">-- A</p>
+                    <p id="panelCurrentValue" class="sensor-value">-- A</p> <!-- Added class for consistency -->
                 </div>
 
                 <div class="card">
                     <h2>Daya Panel</h2>
-                    <p id="panelPowerValue">-- W</p>
+                    <p id="panelPowerValue" class="sensor-value">-- W</p> <!-- Added class for consistency -->
                 </div>
                 
                 <div class="card wide">
@@ -95,8 +76,6 @@
             <p>IoT Dashboard v1.0</p>
         </footer>
     </div>
-    
-    <!-- 5) Finally load your script.js that calls new Chart() -->
     <script src="script.js"></script>
 </body>
 </html>
