@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const datetimeValue = document.getElementById('datetimeValue'); // Added for datetime display
     const coolingStatusIndicator = document.getElementById('coolingStatusIndicator');
     const coolingStatusText = document.getElementById('coolingStatusText');
+
+    let lastSuccessfulData = null; // To store the last successfully fetched data
+    let lastSuccessfulTimestamp = null; // To store the timestamp of the last successful fetch
     const coolingSwitch = document.getElementById('coolingSwitch');
     const themeToggleCheckbox = document.getElementById('themeToggleCheckbox');
 
@@ -20,17 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let totalEnergyJoules = 0; // Variable to accumulate energy in Joules
     const FETCH_INTERVAL_SECONDS = 5; // Define fetch interval in seconds
 
-    // --- Update DateTime ---
-    function updateDateTime() {
-        if (datetimeValue) {
-            const now = new Date();
-            datetimeValue.textContent = now.toLocaleString(); // Or use any other preferred format
-        }
-    }
-
     // --- Fetch and Update Data ---
     async function fetchData() {
-        updateDateTime(); // Update date and time on each fetch
         try {
             const response = await fetch(API_URL);
             if (!response.ok) {
@@ -39,69 +33,128 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             console.log('Fetched data:', data);
 
-            // Update UI elements
-            if (panelTempValue && data.panelTemp !== undefined) {
-                panelTempValue.textContent = `${data.panelTemp.toFixed(1)} °C`;
-            }
-            if (ambientTempValue && data.ambientTemp !== undefined) ambientTempValue.textContent = `${data.ambientTemp.toFixed(1)} °C`;
-            if (lightIntensityValue && data.lightIntensity !== undefined) lightIntensityValue.textContent = `${data.lightIntensity.toFixed(0)} lx`;
-            if (humidityValue && data.humidity !== undefined) humidityValue.textContent = `${data.humidity.toFixed(0)} %`;
-            // if (panelEnergyValue && data.panelEnergy !== undefined) panelEnergyValue.textContent = `${data.panelEnergy.toFixed(1)} kWh`; // Original energy
-            if (panelVoltageValue && data.panelVoltage !== undefined) panelVoltageValue.textContent = `${data.panelVoltage.toFixed(1)} V`;
-            if (panelCurrentValue && data.panelCurrent !== undefined) panelCurrentValue.textContent = `${data.panelCurrent.toFixed(2)} A`;
-            // if (panelPowerValue && data.panelPower !== undefined) panelPowerValue.textContent = `${data.panelPower.toFixed(1)} W`; // Original power
+            // Store successful data and timestamp
+            lastSuccessfulData = data;
+            lastSuccessfulTimestamp = new Date();
 
-            // Calculate Power (P = V * I)
-            let currentPowerWatts = 0;
-            if (data.panelVoltage !== undefined && data.panelCurrent !== undefined) {
-                currentPowerWatts = data.panelVoltage * data.panelCurrent;
-                if (panelPowerValue) {
-                    panelPowerValue.textContent = `${currentPowerWatts.toFixed(1)} W`;
-                }
-            } else {
-                if (panelPowerValue) panelPowerValue.textContent = "N/A";
-            }
-
-            // Calculate and Accumulate Energy
-            // Energy increment in Joules = Power (Watts) * Time (seconds)
-            const energyIncrementJoules = currentPowerWatts * FETCH_INTERVAL_SECONDS;
-            totalEnergyJoules += energyIncrementJoules;
-            
-            // Convert total energy from Joules to kWh (1 kWh = 3,600,000 J)
-            const totalEnergyKWh = totalEnergyJoules / 3600000;
-            if (panelEnergyValue) {
-                panelEnergyValue.textContent = `${totalEnergyKWh.toFixed(3)} kWh`; // Display with more precision
-            }
-
-
-            if (coolingStatusIndicator && coolingStatusText && data.coolingStatus !== undefined) {
-                if (data.coolingStatus) {
-                    coolingStatusIndicator.classList.add('on');
-                    coolingStatusText.textContent = 'ON';
-                } else {
-                    coolingStatusIndicator.classList.remove('on');
-                    coolingStatusText.textContent = 'OFF';
-                }
-            }
-            if (coolingSwitch && data.coolingStatus !== undefined) {
-                coolingSwitch.checked = data.coolingStatus;
-            }
+            // Update UI elements with new data
+            updateUI(lastSuccessfulData, lastSuccessfulTimestamp);
 
         } catch (error) {
             console.error("Could not fetch sensor data:", error);
-            // Display error message or fallback data for all fields
-            const errorText = "N/A";
-            if (panelTempValue) panelTempValue.textContent = errorText;
-            if (ambientTempValue) ambientTempValue.textContent = errorText;
-            if (lightIntensityValue) lightIntensityValue.textContent = errorText;
-            if (humidityValue) humidityValue.textContent = errorText;
-            if (panelEnergyValue) panelEnergyValue.textContent = errorText;
-            if (panelVoltageValue) panelVoltageValue.textContent = errorText;
-            if (panelCurrentValue) panelCurrentValue.textContent = errorText;
-            if (panelPowerValue) panelPowerValue.textContent = errorText;
-            if (coolingStatusText) coolingStatusText.textContent = "Error";
-            if (coolingStatusIndicator) coolingStatusIndicator.classList.remove('on');
+            // If fetch fails, try to display last known good data
+            if (lastSuccessfulData && lastSuccessfulTimestamp) {
+                console.log('Displaying last known good data due to fetch error.');
+                updateUI(lastSuccessfulData, lastSuccessfulTimestamp); // Display last known good data
+            } else {
+                // If no data has ever been successfully fetched, display error/N/A
+                displayErrorState();
+            }
         }
+    }
+
+    // --- Update UI Function ---
+    function updateUI(data, timestamp) {
+        if (datetimeValue && timestamp) {
+            datetimeValue.textContent = timestamp.toLocaleString();
+        }
+
+        if (panelTempValue && data.panelTemp !== undefined) {
+            panelTempValue.textContent = `${data.panelTemp.toFixed(1)} °C`;
+        } else if (panelTempValue) {
+            panelTempValue.textContent = "N/A";
+        }
+
+        if (ambientTempValue && data.ambientTemp !== undefined) {
+            ambientTempValue.textContent = `${data.ambientTemp.toFixed(1)} °C`;
+        } else if (ambientTempValue) {
+            ambientTempValue.textContent = "N/A";
+        }
+
+        if (lightIntensityValue && data.lightIntensity !== undefined) {
+            lightIntensityValue.textContent = `${data.lightIntensity.toFixed(0)} lx`;
+        } else if (lightIntensityValue) {
+            lightIntensityValue.textContent = "N/A";
+        }
+
+        if (humidityValue && data.humidity !== undefined) {
+            humidityValue.textContent = `${data.humidity.toFixed(0)} %`;
+        } else if (humidityValue) {
+            humidityValue.textContent = "N/A";
+        }
+        
+        if (panelVoltageValue && data.panelVoltage !== undefined) {
+            panelVoltageValue.textContent = `${data.panelVoltage.toFixed(1)} V`;
+        } else if (panelVoltageValue) {
+            panelVoltageValue.textContent = "N/A";
+        }
+
+        if (panelCurrentValue && data.panelCurrent !== undefined) {
+            panelCurrentValue.textContent = `${data.panelCurrent.toFixed(2)} A`;
+        } else if (panelCurrentValue) {
+            panelCurrentValue.textContent = "N/A";
+        }
+
+        // Calculate Power (P = V * I)
+        let currentPowerWatts = 0;
+        if (data.panelVoltage !== undefined && data.panelCurrent !== undefined) {
+            currentPowerWatts = data.panelVoltage * data.panelCurrent;
+            if (panelPowerValue) {
+                panelPowerValue.textContent = `${currentPowerWatts.toFixed(1)} W`;
+            }
+        } else {
+            if (panelPowerValue) panelPowerValue.textContent = "N/A";
+        }
+
+        // Calculate and Accumulate Energy
+        // Energy increment in Joules = Power (Watts) * Time (seconds)
+        // This calculation should ideally happen only when new data arrives,
+        // or be based on the duration since the last *new* data point.
+        // For simplicity, if we are displaying stale data, energy accumulation might pause or be handled differently.
+        // Here, we assume energy accumulation continues based on the *displayed* power, even if stale.
+        // A more robust solution would involve timestamps from the ESP.
+        if (data.panelVoltage !== undefined && data.panelCurrent !== undefined) { // Only accumulate if power can be calculated
+            const energyIncrementJoules = currentPowerWatts * FETCH_INTERVAL_SECONDS; // This assumes fetchData interval
+            totalEnergyJoules += energyIncrementJoules;
+        }
+        
+        const totalEnergyKWh = totalEnergyJoules / 3600000;
+        if (panelEnergyValue) {
+            panelEnergyValue.textContent = `${totalEnergyKWh.toFixed(3)} kWh`;
+        }
+
+        if (coolingStatusIndicator && coolingStatusText && data.coolingStatus !== undefined) {
+            if (data.coolingStatus) {
+                coolingStatusIndicator.classList.add('on');
+                coolingStatusText.textContent = 'ON';
+            } else {
+                coolingStatusIndicator.classList.remove('on');
+                coolingStatusText.textContent = 'OFF';
+            }
+        } else if (coolingStatusIndicator && coolingStatusText) {
+            coolingStatusText.textContent = "N/A";
+            coolingStatusIndicator.classList.remove('on');
+        }
+
+        if (coolingSwitch && data.coolingStatus !== undefined) {
+            coolingSwitch.checked = data.coolingStatus;
+        }
+    }
+
+    // --- Display Error State Function ---
+    function displayErrorState() {
+        const errorText = "N/A";
+        if (datetimeValue) datetimeValue.textContent = "Waiting for data...";
+        if (panelTempValue) panelTempValue.textContent = errorText;
+        if (ambientTempValue) ambientTempValue.textContent = errorText;
+        if (lightIntensityValue) lightIntensityValue.textContent = errorText;
+        if (humidityValue) humidityValue.textContent = errorText;
+        if (panelEnergyValue) panelEnergyValue.textContent = errorText; // Or "0.000 kWh"
+        if (panelVoltageValue) panelVoltageValue.textContent = errorText;
+        if (panelCurrentValue) panelCurrentValue.textContent = errorText;
+        if (panelPowerValue) panelPowerValue.textContent = errorText;
+        if (coolingStatusText) coolingStatusText.textContent = "Error";
+        if (coolingStatusIndicator) coolingStatusIndicator.classList.remove('on');
     }
 
     // --- Control Switch Handler ---
@@ -148,9 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
         coolingSwitch.addEventListener('change', handleCoolingSwitchChange);
     }
 
-    // Initial data fetch and datetime update
+    // Initial data fetch
     fetchData(); 
-    updateDateTime(); // Initial call to set datetime immediately
 
     // Fetch data periodically
     setInterval(fetchData, FETCH_INTERVAL_SECONDS * 1000); // Fetch every FETCH_INTERVAL_SECONDS
