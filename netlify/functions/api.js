@@ -167,13 +167,21 @@ const handler = serverless(app);
 
 // Netlify handler function
 exports.handler = async (event, context) => {
-  // strip Netlify’s function prefix so Express sees “/api/update” instead of “/.netlify/functions/api/api/update”
+  // Handle path rewriting
   if (event.path.startsWith('/.netlify/functions/api')) {
+    // strip awalan Netlify
     event.path = event.path.replace(/^\/\.netlify\/functions\/api/, '');
+  } else if (!event.path.startsWith('/api/')) {
+    // kalau ada request langsung ke /api/... (mis. GET /api/getcontrol), biarkan
+    // tapi kalau ada request ke /getcontrol tanpa /api, tambahkan:
+    if (event.path === '/getcontrol') {
+      event.path = '/api/getcontrol';
+    } else if (event.path === '/update') {
+      event.path = '/api/update';
+    }
   }
-  if (event.path === '') { // After stripping, if path is empty, make it '/' for Express root
-    event.path = '/';
-  }
+  // kalau path jadi kosong, ubah ke '/'
+  if (event.path === '') event.path = '/';
   // console.log('Modified event path for Express:', event.path);
 
     try {
