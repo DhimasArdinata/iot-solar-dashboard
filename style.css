@@ -135,6 +135,14 @@ main {
     text-transform: uppercase; /* Uppercase for titles */
     letter-spacing: 0.5px;
     transition: color var(--transition-speed) ease;
+    display: flex; /* ADDED for icon alignment */
+    align-items: center; /* ADDED for icon alignment */
+}
+
+.card h2 i.fas { /* Style for Font Awesome icons within card titles */
+    margin-right: 8px; /* Space between icon and text */
+    font-size: 0.9em; /* Slightly smaller icon relative to h2 text */
+    /* The color will be inherited from .card h2 */
 }
 
 .sensor-value {
@@ -748,6 +756,26 @@ body.dark-theme .btn-primary {
 body.dark-theme .btn-primary:hover {
     background-color: #2ca89a; /* Slightly lighter version of primary-color-dark */
     border-color: #2ca89a;
+}
+
+.btn-secondary {
+    color: var(--primary-color-light);
+    background-color: transparent;
+    border-color: var(--primary-color-light);
+}
+.btn-secondary:hover {
+    color: #fff;
+    background-color: var(--primary-color-light);
+    border-color: var(--primary-color-light);
+}
+body.dark-theme .btn-secondary {
+    color: var(--primary-color-dark);
+    border-color: var(--primary-color-dark);
+}
+body.dark-theme .btn-secondary:hover {
+    color: var(--background-color-dark);
+    background-color: var(--primary-color-dark);
+    border-color: var(--primary-color-dark);
 }
 
 #currentThresholdDisplay {

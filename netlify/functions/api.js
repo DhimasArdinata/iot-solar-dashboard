@@ -82,10 +82,19 @@ app.get('/api/sensordata', async (req, res) => {
 
         if (sensorDocSnap.exists) {
             latestSensorDataFromDB = sensorDocSnap.data();
+            if (latestSensorDataFromDB.updatedAt && typeof latestSensorDataFromDB.updatedAt.toDate === 'function') {
+                latestSensorDataFromDB.updatedAtISO = latestSensorDataFromDB.updatedAt.toDate().toISOString();
+            } else {
+                // Fallback if updatedAt is not a Firestore timestamp (e.g. during initial creation with JS Date)
+                latestSensorDataFromDB.updatedAtISO = new Date().toISOString(); 
+            }
         } else {
             console.log(`Document ${LATEST_SENSOR_DOC_ID} not found in ${SENSOR_READINGS_COLLECTION}. Creating with defaults.`);
-            await sensorDocRef.set(DEFAULT_SENSOR_VALUES);
-            latestSensorDataFromDB = { ...DEFAULT_SENSOR_VALUES, updatedAt: new Date() }; // Use current date for immediate display
+            const defaultDataWithTimestamp = { ...DEFAULT_SENSOR_VALUES };
+            // For DEFAULT_SENSOR_VALUES, 'updatedAt' is FieldValue.serverTimestamp()
+            // This won't resolve to a date until written. So, for initial creation display, use current time.
+            await sensorDocRef.set(defaultDataWithTimestamp);
+            latestSensorDataFromDB = { ...defaultDataWithTimestamp, updatedAtISO: new Date().toISOString() };
         }
 
         if (controlDocSnap.exists) {
