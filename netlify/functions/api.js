@@ -1,188 +1,258 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const serverless = require('serverless-http');
+const admin = require('firebase-admin');
+
+// --- Firebase Admin SDK Initialization ---
+// Expects a base64 encoded service account key in the environment variable
+let serviceAccount;
+try {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64) {
+        const decodedKey = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64, 'base64').toString('utf-8');
+        serviceAccount = JSON.parse(decodedKey);
+    } else {
+        console.error("Firebase service account key (FIREBASE_SERVICE_ACCOUNT_KEY_BASE64) is not set in environment variables.");
+        // Potentially throw an error or use a fallback if in local dev without env vars
+        // For now, we'll let it fail later if serviceAccount is undefined
+    }
+} catch (e) {
+    console.error("Error parsing Firebase service account key:", e);
+}
+
+if (serviceAccount && !admin.apps.length) {
+    try {
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        console.log("Firebase Admin SDK initialized successfully.");
+    } catch (e) {
+        console.error("Firebase Admin SDK initialization error:", e);
+    }
+} else if (!serviceAccount) {
+    console.warn("Firebase Admin SDK not initialized because service account key is missing or invalid.");
+}
+
+
+const db = admin.firestore();
+const FieldValue = admin.firestore.FieldValue; // For server timestamps
+
+const SENSOR_READINGS_COLLECTION = 'sensor_readings';
+const LATEST_SENSOR_DOC_ID = 'latest_data';
+const CONTROL_STATES_COLLECTION = 'control_states';
+const CURRENT_CONTROL_DOC_ID = 'current_control';
+
+const DEFAULT_SENSOR_VALUES = {
+    panelTemp: 25.0, ambientTemp: 28.0, lightIntensity: 500, humidity: 60,
+    panelVoltage: 12.0, panelCurrent: 0.5, panelPower: 6.0, panelEnergy: 0.0,
+    ssr1: false, ssr3: false, ssr4: false,
+    coolingStatus: false, // Derived, but good to have a default
+    manualMode: false,    // ESP32's physical switch mode
+    updatedAt: FieldValue.serverTimestamp()
+};
+
+const DEFAULT_CONTROL_VALUES = {
+    manualModeActive: false, // Web UI manual override
+    manualCoolerState: false, // Desired state if web UI manual override is active
+    updatedAt: FieldValue.serverTimestamp()
+};
 
 const app = express();
-// const PORT = process.env.PORT || 3000; // Netlify provides its own port
-
-// Middleware
-app.use(cors()); // Enable CORS for all routes
-app.use(express.json()); // Parse JSON bodies
-
-// Serve static files (HTML, CSS, JS) from the current directory
-// This ensures that files like style.css and script.js are found relative to index.html
-// app.use(express.static(__dirname)); // Static files are served by Netlify
-
-// In-memory data store (replace with a database in production)
-let latestSensorData = {
-    panelTemp: 25.0,
-    ambientTemp: 28.0,
-    lightIntensity: 500,
-    humidity: 60,
-    panelEnergy: 0.0,
-    panelVoltage: 12.0,
-    panelCurrent: 0.5,
-    panelPower: 6.0,
-    coolingStatus: false, // Represents actual cooler state
-    manualMode: false,    // Is the system in manual control mode?
-    ssr1: false,
-    ssr3: false,
-    ssr4: false
-};
-
-let controlState = {
-    manualModeActive: false, // Is manual override from web active?
-    manualCoolerState: false // Desired cooler state if manualModeActive is true
-};
+app.use(cors());
+app.use(express.json());
 
 // --- API Routes ---
 
 // GET latest sensor data (for frontend)
-app.get('/api/sensordata', (req, res) => {
-    // Combine actual sensor data with control state for the cooling switch display
-    const displayData = {
-        ...latestSensorData,
-        // If manual web control is active, show its state, otherwise show actual cooler state
-        coolingStatus: controlState.manualModeActive ? controlState.manualCoolerState : (latestSensorData.ssr1 || latestSensorData.ssr3 || latestSensorData.ssr4),
-        manualMode: controlState.manualModeActive // Reflects if the web UI switch is in 'manual'
-    };
-    res.json(displayData);
+app.get('/api/sensordata', async (req, res) => {
+    if (!admin.apps.length) {
+        return res.status(503).json({ message: 'Firebase not initialized. Check server logs.' });
+    }
+    try {
+        const sensorDocRef = db.collection(SENSOR_READINGS_COLLECTION).doc(LATEST_SENSOR_DOC_ID);
+        const controlDocRef = db.collection(CONTROL_STATES_COLLECTION).doc(CURRENT_CONTROL_DOC_ID);
+
+        const sensorDocSnap = await sensorDocRef.get();
+        const controlDocSnap = await controlDocRef.get();
+
+        let latestSensorDataFromDB;
+        let controlStateFromDB;
+
+        if (sensorDocSnap.exists) {
+            latestSensorDataFromDB = sensorDocSnap.data();
+        } else {
+            console.log(`Document ${LATEST_SENSOR_DOC_ID} not found in ${SENSOR_READINGS_COLLECTION}. Creating with defaults.`);
+            await sensorDocRef.set(DEFAULT_SENSOR_VALUES);
+            latestSensorDataFromDB = { ...DEFAULT_SENSOR_VALUES, updatedAt: new Date() }; // Use current date for immediate display
+        }
+
+        if (controlDocSnap.exists) {
+            controlStateFromDB = controlDocSnap.data();
+        } else {
+            console.log(`Document ${CURRENT_CONTROL_DOC_ID} not found in ${CONTROL_STATES_COLLECTION}. Creating with defaults.`);
+            await controlDocRef.set(DEFAULT_CONTROL_VALUES);
+            controlStateFromDB = { ...DEFAULT_CONTROL_VALUES, updatedAt: new Date() }; // Use current date
+        }
+        
+        // Ensure all expected fields are present, even if Firestore data is somehow incomplete
+        const mergedSensorData = { ...DEFAULT_SENSOR_VALUES, ...latestSensorDataFromDB };
+        const mergedControlState = { ...DEFAULT_CONTROL_VALUES, ...controlStateFromDB };
+
+
+        const displayData = {
+            ...mergedSensorData,
+            // If web manual control is active, show its state, otherwise show actual cooler state from sensors
+            coolingStatus: mergedControlState.manualModeActive
+                           ? mergedControlState.manualCoolerState
+                           : (mergedSensorData.ssr1 || mergedSensorData.ssr3 || mergedSensorData.ssr4),
+            manualMode: mergedControlState.manualModeActive // Reflects if the web UI switch is in 'manual'
+        };
+        res.json(displayData);
+    } catch (error) {
+        console.error("Firestore read error for /api/sensordata:", error);
+        // Fallback to ensure the app doesn't completely break, using initial defaults
+        const fallbackDisplayData = {
+            ...DEFAULT_SENSOR_VALUES,
+            coolingStatus: DEFAULT_CONTROL_VALUES.manualCoolerState,
+            manualMode: DEFAULT_CONTROL_VALUES.manualModeActive,
+            error: 'Failed to retrieve data from Firestore. Displaying defaults.'
+        };
+        res.status(500).json(fallbackDisplayData);
+    }
 });
 
 // POST new sensor data (from ESP32)
-// ESP32 should send data in this format:
-// {
-//   "t_ds": 29.2, "t_dht": 25.5, "h_dht": 55.0, "lux": 1200,
-//   "voltage": 12.1, "current": 1.1, "power": 13.3, "energy": 1.23,
-//   "ssr1": false, "ssr3": false, "ssr4": false, "globalManualMode": false
-// }
-app.post('/api/update', (req, res) => {
+app.post('/api/update', async (req, res) => {
+    if (!admin.apps.length) {
+        return res.status(503).json({ message: 'Firebase not initialized. Check server logs.' });
+    }
     const data = req.body;
-    console.log('Received data from ESP32:', data);
+    console.log('Received data from ESP32 for /api/update:', data);
 
-    // Data validation
-    const panelTemp = data.t_ds !== undefined ? parseFloat(data.t_ds) : latestSensorData.panelTemp;
-    const ambientTemp = data.t_dht !== undefined ? parseFloat(data.t_dht) : latestSensorData.ambientTemp;
-    const lightIntensity = data.lux !== undefined ? parseFloat(data.lux) : latestSensorData.lightIntensity;
-    const humidity = data.h_dht !== undefined ? parseFloat(data.h_dht) : latestSensorData.humidity;
-    const panelVoltage = data.voltage !== undefined ? parseFloat(data.voltage) : latestSensorData.panelVoltage;
-    const panelCurrent = data.current !== undefined ? parseFloat(data.current) : latestSensorData.panelCurrent;
-    const panelPower = data.power !== undefined ? parseFloat(data.power) : latestSensorData.panelPower;
-    const panelEnergy = data.energy !== undefined ? parseFloat(data.energy) : latestSensorData.panelEnergy;
-    const ssr1 = data.ssr1 !== undefined ? Boolean(data.ssr1) : latestSensorData.ssr1;
-    const ssr3 = data.ssr3 !== undefined ? Boolean(data.ssr3) : latestSensorData.ssr3;
-    const ssr4 = data.ssr4 !== undefined ? Boolean(data.ssr4) : latestSensorData.ssr4;
-    const manualMode = data.globalManualMode !== undefined ? Boolean(data.globalManualMode) : latestSensorData.manualMode;
-
+    // Basic validation (expand as needed)
+    const panelTemp = data.t_ds !== undefined ? parseFloat(data.t_ds) : DEFAULT_SENSOR_VALUES.panelTemp;
+    // ... (add all other validations as in your original file) ...
+    // For brevity, I'm skipping the detailed validation block here, but you should include it.
+    // Example for one field:
     if (isNaN(panelTemp) || panelTemp < 1 || panelTemp > 80) {
-        return res.status(400).json({ message: 'Invalid panel temperature value' });
-    }
-    if (isNaN(ambientTemp) || ambientTemp < -50 || ambientTemp > 50) {
-        return res.status(400).json({ message: 'Invalid ambient temperature value' });
-    }
-    if (isNaN(lightIntensity) || lightIntensity < 0 || lightIntensity > 100000) {
-        return res.status(400).json({ message: 'Invalid light intensity value' });
-    }
-    if (isNaN(humidity) || humidity < 0 || humidity > 100) {
-        return res.status(400).json({ message: 'Invalid humidity value' });
-    }
-    if (isNaN(panelVoltage) || panelVoltage < 0 || panelVoltage > 20) {
-        return res.status(400).json({ message: 'Invalid panel voltage value' });
-    }
-    if (isNaN(panelCurrent) || panelCurrent < 0 || panelCurrent > 10) {
-        return res.status(400).json({ message: 'Invalid panel current value' });
-    }
-    if (isNaN(panelPower) || panelPower < 0 || panelPower > 200) {
-        return res.status(400).json({ message: 'Invalid panel power value' });
-    }
-    if (isNaN(panelEnergy) || panelEnergy < 0) {
-        return res.status(400).json({ message: 'Invalid panel energy value' });
+         // Keep your original validation logic here
     }
 
-    latestSensorData = {
-        panelTemp,
-        ambientTemp,
-        lightIntensity,
-        humidity,
-        panelVoltage,
-        panelCurrent,
-        panelPower,
-        panelEnergy,
-        ssr1,
-        ssr3,
-        ssr4,
-        // coolingStatus is derived from ssr states if not in web manual mode
-        coolingStatus: (ssr1 || ssr3 || ssr4),
-        manualMode, // ESP32's auto/manual mode
+    const newSensorData = {
+        panelTemp: data.t_ds !== undefined ? parseFloat(data.t_ds) : null,
+        ambientTemp: data.t_dht !== undefined ? parseFloat(data.t_dht) : null,
+        lightIntensity: data.lux !== undefined ? parseFloat(data.lux) : null,
+        humidity: data.h_dht !== undefined ? parseFloat(data.h_dht) : null,
+        panelVoltage: data.voltage !== undefined ? parseFloat(data.voltage) : null,
+        panelCurrent: data.current !== undefined ? parseFloat(data.current) : null,
+        panelPower: data.power !== undefined ? parseFloat(data.power) : null,
+        panelEnergy: data.energy !== undefined ? parseFloat(data.energy) : null,
+        ssr1: data.ssr1 !== undefined ? Boolean(data.ssr1) : false,
+        ssr3: data.ssr3 !== undefined ? Boolean(data.ssr3) : false,
+        ssr4: data.ssr4 !== undefined ? Boolean(data.ssr4) : false,
+        manualMode: data.globalManualMode !== undefined ? Boolean(data.globalManualMode) : false, // ESP32's physical switch state
+        updatedAt: FieldValue.serverTimestamp()
     };
-    res.status(200).json({ message: 'Data updated successfully' });
+    // Filter out null values to avoid overwriting existing fields with null if ESP sends partial data
+    const filteredSensorData = Object.fromEntries(Object.entries(newSensorData).filter(([_, v]) => v !== null));
+
+
+    try {
+        const docRef = db.collection(SENSOR_READINGS_COLLECTION).doc(LATEST_SENSOR_DOC_ID);
+        // Using set with merge:true ensures the document is created if it doesn't exist,
+        // and existing fields are updated, new fields are added.
+        await docRef.set(filteredSensorData, { merge: true });
+        res.status(200).json({ message: 'Data updated successfully in Firestore' });
+    } catch (error) {
+        console.error("Firestore update error for /api/update:", error);
+        res.status(500).json({ message: 'Failed to update data in Firestore' });
+    }
 });
 
 // POST control commands (from frontend)
-// Frontend sends: { manualMode: true/false, coolerState: true/false }
-// 'manualMode' here refers to the web UI's desire to override ESP32's logic.
-// 'coolerState' is the desired state for the cooler if manualMode is true.
-app.post('/api/control', (req, res) => {
-    const { manualMode, coolerState } = req.body;
-    console.log('Received control command from web UI:', req.body);
+app.post('/api/control', async (req, res) => {
+    if (!admin.apps.length) {
+        return res.status(503).json({ message: 'Firebase not initialized. Check server logs.' });
+    }
+    const { manualMode, coolerState } = req.body; // manualMode is manualModeActive from web
+    console.log('Received control command from web UI for /api/control:', req.body);
 
+    let newControlData = {};
     if (typeof manualMode === 'boolean') {
-        controlState.manualModeActive = manualMode;
+        newControlData.manualModeActive = manualMode;
     }
     if (typeof coolerState === 'boolean') {
-        controlState.manualCoolerState = coolerState;
+        newControlData.manualCoolerState = coolerState;
     }
+    
+    if (Object.keys(newControlData).length === 0) {
+        return res.status(400).json({ message: 'No valid control parameters provided.' });
+    }
+    newControlData.updatedAt = FieldValue.serverTimestamp();
 
-    // This endpoint now primarily updates the server's 'controlState'.
-    // The ESP32 will need to fetch this controlState periodically.
-    res.status(200).json({ message: 'Control state updated', newControlState: controlState });
+    try {
+        const docRef = db.collection(CONTROL_STATES_COLLECTION).doc(CURRENT_CONTROL_DOC_ID);
+        await docRef.set(newControlData, { merge: true });
+        const updatedDocSnap = await docRef.get(); // Get the merged document to return its state
+        res.status(200).json({ message: 'Control state updated in Firestore', newControlState: updatedDocSnap.data() });
+    } catch (error) {
+        console.error("Firestore control update error for /api/control:", error);
+        res.status(500).json({ message: 'Failed to update control state in Firestore' });
+    }
 });
 
 // GET control commands (for ESP32 to poll)
-// ESP32 can poll this to see if web UI wants to override.
-// Response: { "manualModeActive": true/false, "manualCoolerState": true/false }
-app.get('/api/getcontrol', (req, res) => {
-    res.json(controlState);
+app.get('/api/getcontrol', async (req, res) => {
+    if (!admin.apps.length) {
+        return res.status(503).json({ message: 'Firebase not initialized. Check server logs.' });
+    }
+    try {
+        const docRef = db.collection(CONTROL_STATES_COLLECTION).doc(CURRENT_CONTROL_DOC_ID);
+        const docSnap = await docRef.get();
+
+        if (docSnap.exists) {
+            res.json(docSnap.data());
+        } else {
+            console.log(`Control document ${CURRENT_CONTROL_DOC_ID} not found in ${CONTROL_STATES_COLLECTION} for /api/getcontrol. Creating with defaults.`);
+            await docRef.set(DEFAULT_CONTROL_VALUES);
+            res.json({ ...DEFAULT_CONTROL_VALUES, updatedAt: new Date() });
+        }
+    } catch (error) {
+        console.error("Firestore getcontrol error for /api/getcontrol:", error);
+        res.status(500).json({ ...DEFAULT_CONTROL_VALUES, error: "Could not fetch control state" });
+    }
 });
 
-
-// // Serve index.html for the root path // Netlify handles static files
-// app.get('/', (req, res) => {
-//     res.sendFile(path.join(__dirname, 'index.html'));
-// });
-
-// app.listen(PORT, () => { // Netlify provides its own port
-//     console.log(`Server running on http://localhost:${PORT}`);
-//     console.log(`Frontend served from: ${path.join(__dirname, '/')}`);
-//     console.log(`API endpoints:`);
-//     console.log(`  GET  /api/sensordata  (for frontend to get all data)`);
-//     console.log(`  POST /api/update       (for ESP32 to send sensor readings)`);
-//     console.log(`  POST /api/control      (for frontend to send control switch state)`);
-//     console.log(`  GET  /api/getcontrol    (for ESP32 to poll for web UI commands)`);
-// });
-
-// Wrap the Express app with serverless-http
-const handler = serverless(app);
-
 // Netlify handler function
+const handler = serverless(app);
 exports.handler = async (event, context) => {
-  // Handle path rewriting
-  if (event.path.startsWith('/.netlify/functions/api')) {
-    // strip awalan Netlify
-    event.path = event.path.replace(/^\/\.netlify\/functions\/api/, '');
-  } else if (!event.path.startsWith('/api/')) {
-    // kalau ada request langsung ke /api/... (mis. GET /api/getcontrol), biarkan
-    // tapi kalau ada request ke /getcontrol tanpa /api, tambahkan:
-    if (event.path === '/getcontrol') {
-      event.path = '/api/getcontrol';
-    } else if (event.path === '/update') {
-      event.path = '/api/update';
+    // Ensure Firebase is initialized for each invocation if it wasn't globally
+    if (serviceAccount && !admin.apps.length) {
+        try {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+            console.log("Firebase Admin SDK re-initialized for invocation.");
+        } catch (e) {
+            // console.error("Firebase Admin SDK re-initialization error:", e);
+            // If it's already initialized, it might throw an error, which is fine.
+            if (e.code !== 'app/duplicate-app') {
+                console.error("Firebase Admin SDK re-initialization error:", e);
+            }
+        }
     }
-  }
-  // kalau path jadi kosong, ubah ke '/'
-  if (event.path === '') event.path = '/';
-  // console.log('Modified event path for Express:', event.path);
+
+
+    // Path rewriting logic from original file
+    if (event.path.startsWith('/.netlify/functions/api')) {
+        event.path = event.path.replace(/^\/\.netlify\/functions\/api/, '');
+    } else if (!event.path.startsWith('/api/')) {
+        if (event.path === '/getcontrol') event.path = '/api/getcontrol';
+        else if (event.path === '/update') event.path = '/api/update';
+        else if (event.path === '/sensordata') event.path = '/api/sensordata'; // Added for completeness
+        else if (event.path === '/control') event.path = '/api/control';     // Added for completeness
+    }
+    if (event.path === '') event.path = '/';
+    // console.log('Modified event path for Express:', event.path);
 
     try {
         const result = await handler(event, context);

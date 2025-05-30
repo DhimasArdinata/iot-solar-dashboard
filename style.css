@@ -414,9 +414,13 @@ body.dark-theme footer {
 }
 
 .theme-switch-wrapper em {
-    margin-left: 10px;
-    font-size: 1rem;
-    color: #fff; /* Default light color, will be overridden by dark theme if body.dark-theme is active */
+    margin-left: 12px;
+    font-size: 0.9rem; /* Slightly adjusted */
+    font-weight: 500;
+    color: #004d40; /* Darker teal color for light mode for better contrast */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease; /* Add transition for color change */
 }
 
 body.dark-theme .theme-switch-wrapper em {
@@ -426,9 +430,9 @@ body.dark-theme .theme-switch-wrapper em {
 
 .theme-switch {
     display: inline-block;
-    height: 24px; /* Smaller switch */
+    height: 28px; /* Increased height */
     position: relative;
-    width: 44px; /* Smaller switch */
+    width: 56px; /* Increased width */
 }
 
 .theme-switch input {
@@ -450,29 +454,34 @@ body.dark-theme .theme-switch-wrapper em {
 
 .theme-slider:before {
     background-color: #fff;
-    bottom: 3px; /* Adjusted for smaller switch */
-    content: "";
-    height: 18px; /* Adjusted */
-    left: 3px;  /* Adjusted */
+    bottom: 4px; 
+    content: "☀️"; /* Sun icon for light mode */
+    font-size: 14px; /* Adjust icon size */
+    line-height: 20px; /* Center icon vertically */
+    text-align: center; /* Center icon horizontally */
+    height: 20px; 
+    left: 4px;  
     position: absolute;
     transition: .4s;
-    width: 18px; /* Adjusted */
+    width: 20px; 
 }
 
 input:checked + .theme-slider {
-    background-color: #00796b; /* Teal, or a color suitable for dark theme toggle */
+    background-color: #004d40; /* Darker teal for active dark mode toggle */
 }
 body.dark-theme input:checked + .theme-slider {
-    background-color: #39c6b7; /* Lighter teal for dark mode */
+    background-color: #58a6ff; /* A distinct blue for dark mode active toggle */
 }
 
-
 input:checked + .theme-slider:before {
-    transform: translateX(20px); /* Adjusted */
+    content: "🌙"; /* Moon icon for dark mode */
+    transform: translateX(26px); /* Adjusted for new width */
+    background-color: #2d333b; /* Knob color in dark mode */
+    color: #e6edf3; /* Icon color in dark mode */
 }
 
 .theme-slider.round {
-    border-radius: 24px; /* Adjusted */
+    border-radius: 28px; /* Adjusted for new height */
 }
 
 .theme-slider.round:before {

@@ -23,3 +23,6 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify
+
+# Service account keys
+cooler-panel-surya-firebase-adminsdk-fbsvc-70bfa4e384.json
