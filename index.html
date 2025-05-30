@@ -16,6 +16,7 @@
         <ul class="sidebar-menu">
             <li><a href="#" class="sidebar-link active-link" data-view="dashboardView">Dashboard</a></li>
             <li><a href="#" class="sidebar-link" data-view="tableView">Data Table</a></li>
+            <li><a href="#" class="sidebar-link" data-view="settingsView">Pengaturan</a></li>
             <!-- Add more links here as needed -->
         </ul>
     </nav>
@@ -119,6 +120,22 @@
                     <div class="pagination-controls">
                         <!-- Pagination controls will go here -->
                     </div>
+                </div>
+
+                <div id="settingsView" class="view-container">
+                    <h2>Pengaturan Pendinginan</h2>
+                    <div class="card settings-card">
+                        <h3>Threshold Suhu Ambien untuk Pendinginan</h3>
+                        <p>Atur suhu ambien (°C) di mana sistem pendingin otomatis akan aktif.</p>
+                        <div class="setting-item">
+                            <label for="ambientTempThresholdInput">Threshold Suhu (°C):</label>
+                            <input type="number" id="ambientTempThresholdInput" name="ambientTempThresholdInput" step="0.1" min="0" max="50">
+                        </div>
+                        <button id="saveCoolingSettingsBtn" class="btn btn-primary">Simpan Pengaturan</button>
+                        <p id="currentThresholdDisplay" style="margin-top: 10px;">Ambang batas saat ini: <span id="currentThresholdValue">Memuat...</span> °C</p>
+                        <p id="settingsStatusMsg" class="status-message"></p>
+                    </div>
+                    <!-- Add more settings cards here if needed -->
                 </div>
             </main>
             <footer>

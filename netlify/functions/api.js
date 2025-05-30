@@ -41,6 +41,8 @@ const LATEST_SENSOR_DOC_ID = 'latest_data';
 const SENSOR_HISTORY_COLLECTION = 'sensor_history'; // New collection for historical data
 const CONTROL_STATES_COLLECTION = 'control_states';
 const CURRENT_CONTROL_DOC_ID = 'current_control';
+const CONFIGURATION_COLLECTION = 'configuration'; // New
+const COOLING_SETTINGS_DOC_ID = 'cooling_config'; // New
 
 const DEFAULT_SENSOR_VALUES = {
     panelTemp: 25.0, ambientTemp: 28.0, lightIntensity: 500, humidity: 60,
@@ -346,3 +348,69 @@ exports.handler = async (event, context) => {
         };
     }
 };
+
+// --- Cooling Configuration Settings API ---
+
+// GET current cooling settings (for ESP32 and frontend)
+app.get('/api/cooling-settings', async (req, res) => {
+    if (!admin.apps.length) {
+        return res.status(503).json({ message: 'Firebase not initialized.' });
+    }
+    try {
+        const docRef = db.collection(CONFIGURATION_COLLECTION).doc(COOLING_SETTINGS_DOC_ID);
+        const docSnap = await docRef.get();
+
+        if (docSnap.exists) {
+            res.json(docSnap.data());
+        } else {
+            // If no settings exist, return default or an empty object
+            // Consider what the ESP32 should do if no threshold is set.
+            // For now, returning a default might be safer.
+            const defaultCoolingSettings = { 
+                ambientTempCoolingThreshold: 30.0, // Example default
+                // Add other default settings here if any
+                updatedAt: FieldValue.serverTimestamp() // Or null if you prefer
+            };
+            // Optionally, create the default settings document if it doesn't exist
+            // await docRef.set(defaultCoolingSettings); 
+            // res.json(defaultCoolingSettings);
+            // For now, just indicate not found or return empty/default structure
+            res.status(200).json({ ambientTempCoolingThreshold: null }); // Or your preferred default
+        }
+    } catch (error) {
+        console.error("Firestore error getting cooling settings:", error);
+        res.status(500).json({ message: 'Failed to retrieve cooling settings', details: error.message });
+    }
+});
+
+// POST new cooling settings (from frontend)
+app.post('/api/cooling-settings', async (req, res) => {
+    if (!admin.apps.length) {
+        return res.status(503).json({ message: 'Firebase not initialized.' });
+    }
+    const { ambientTempCoolingThreshold } = req.body;
+
+    if (ambientTempCoolingThreshold === undefined || typeof ambientTempCoolingThreshold !== 'number' || isNaN(ambientTempCoolingThreshold)) {
+        return res.status(400).json({ message: 'Invalid or missing ambientTempCoolingThreshold. Must be a number.' });
+    }
+    
+    // Add reasonable bounds for the threshold
+    if (ambientTempCoolingThreshold < 0 || ambientTempCoolingThreshold > 50) {
+        return res.status(400).json({ message: 'Threshold must be between 0 and 50 degrees Celsius.' });
+    }
+
+    const newSettings = {
+        ambientTempCoolingThreshold: parseFloat(ambientTempCoolingThreshold.toFixed(1)), // Store with one decimal place
+        // Add any other settings here if they are part of the same config document
+        updatedAt: FieldValue.serverTimestamp()
+    };
+
+    try {
+        const docRef = db.collection(CONFIGURATION_COLLECTION).doc(COOLING_SETTINGS_DOC_ID);
+        await docRef.set(newSettings, { merge: true }); // Use merge:true to update or create
+        res.status(200).json({ message: 'Cooling settings updated successfully', newSettings });
+    } catch (error) {
+        console.error("Firestore error setting cooling settings:", error);
+        res.status(500).json({ message: 'Failed to update cooling settings', details: error.message });
+    }
+});
