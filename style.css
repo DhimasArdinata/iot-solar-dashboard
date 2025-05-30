@@ -1,133 +1,161 @@
-/* Light Theme (Default) */
-body {
-    font-family: 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    margin: 0;
-    background-color: #f4f6f8; /* Lighter, more neutral background */
-    color: #333; /* Standard text color */
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-    padding: 20px;
+:root {
+    --primary-color-light: #00796b; /* Teal */
+    --primary-color-dark-light: #004d40; /* Darker Teal */
+    --background-color-light: #f0f2f5; /* Softer background */
+    --card-background-light: #ffffff;
+    --text-color-light: #333333;
+    --subtle-border-light: #e0e0e0;
+    --shadow-color-light: rgba(0, 0, 0, 0.08);
+
+    --primary-color-dark: #39c6b7; /* Lighter Teal for dark mode */
+    --primary-color-dark-dark: #89ddff; /* Accent for values in dark mode */
+    --background-color-dark: #1c2128; /* GitHub dark dim */
+    --card-background-dark: #22272e; /* Slightly lighter than body */
+    --text-color-dark: #c9d1d9; /* Light gray for text */
+    --subtle-border-dark: #333a43;
+    --shadow-color-dark: rgba(0, 0, 0, 0.25);
+
+    --font-family-main: 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --border-radius-main: 12px;
+    --border-radius-container: 16px;
+    --transition-speed: 0.3s;
+}
+
+/* Apply box-sizing to all elements */
+*, *::before, *::after {
     box-sizing: border-box;
-    transition: background-color 0.3s ease, color 0.3s ease; /* For theme toggle */
+}
+
+body {
+    font-family: var(--font-family-main);
+    margin: 0;
+    background-color: var(--background-color-light);
+    color: var(--text-color-light);
+    /* display: flex; justify-content: center; align-items: flex-start; Removed */
+    min-height: 100vh;
+    /* padding: 20px; Removed, will be applied to content-wrapper */
+    font-size: 16px; /* Base font size */
+    line-height: 1.6;
+    transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
 }
 
 .container {
+    /* This is the main content block within content-wrapper */
     width: 100%;
-    max-width: 1300px;
-    background-color: #ffffff;
-    border-radius: 16px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* For theme toggle */
+    /* max-width: 1300px; /* Max width of the content area - REMOVED for full width */
+    background-color: var(--card-background-light); /* Container has its own background */
+    border-radius: var(--border-radius-container);
+    box-shadow: 0 10px 30px var(--shadow-color-light);
+    overflow: hidden; /* Ensures child elements don't break border radius */
+    transition: background-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
 }
 
 header {
-    background: linear-gradient(to right, #00796b, #004d40); /* Teal gradient */
+    background: linear-gradient(135deg, var(--primary-color-light), var(--primary-color-dark-light));
     color: white;
-    padding: 30px 25px;
-    text-align: left;
-    border-bottom: none;
-    transition: background-color 0.3s ease, color 0.3s ease; /* For theme toggle */
+    padding: 24px 30px; /* Adjusted padding */
+    display: flex; /* For aligning title and datetime */
+    justify-content: space-between;
+    align-items: center;
+    position: relative; /* For theme switch positioning */
+    transition: background-color var(--transition-speed) ease;
 }
 
 header h1 {
     margin: 0;
-    font-size: 2em;
+    font-size: 1.8em; /* Slightly reduced for balance */
     font-weight: 500;
+    line-height: 1.2;
 }
 
 .datetime-display {
-    font-size: 2.2em;
-    font-weight: 500;
-    color: #00796b;
-    text-align: center;
-    padding: 15px 0;
-    margin: 0 25px;
-    transition: color 0.3s ease; /* For theme toggle */
+    font-size: 0.9em; /* Smaller, as it's in header */
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.85); /* White with some transparency */
+    text-align: right;
+    /* Removed padding and margin as it's part of flex */
+    transition: color var(--transition-speed) ease;
 }
 
 main {
-    padding: 25px;
+    padding: 30px; /* Consistent padding */
 }
 
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-    padding: 0;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Default responsive behavior */
+    gap: 30px; /* Increased gap */
 }
 
 .card {
-    background-color: #ffffff;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e0e0e0;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s ease, border-color 0.3s ease; /* For theme toggle */
+    background-color: var(--card-background-light);
+    padding: 20px; /* Slightly reduced padding */
+    border-radius: var(--border-radius-main);
+    box-shadow: 0 4px 6px var(--shadow-color-light); /* Softer shadow */
+    border: 1px solid var(--subtle-border-light);
+    display: flex;
+    flex-direction: column; /* Ensure content flows top to bottom */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
 }
 
 .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px); /* Subtle lift */
+    box-shadow: 0 8px 12px var(--shadow-color-light); /* Enhanced shadow on hover */
 }
 
+/* Spanning cards - simplified, adjust as needed if specific column counts are critical */
 .card.large {
-    grid-column: span 1;
+    grid-column: span 1; /* Default, adjust if needed for specific layouts */
 }
-
-.card.wide {
-    grid-column: span 1;
-}
-
 @media (min-width: 768px) {
-    .grid-container {
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    .card.large { /* Example: make 'large' cards span 2 columns on medium screens */
+       /* grid-column: span 2; */
     }
 }
-
-@media (min-width: 1024px) {
+@media (min-width: 1024px) { /* For 3-column layout */
     .grid-container {
         grid-template-columns: repeat(3, 1fr);
     }
-     .card.wide {
-        grid-column: span 3;
-    }
 }
-
-@media (min-width: 1300px) {
+@media (min-width: 1300px) { /* For 4-column layout */
     .grid-container {
         grid-template-columns: repeat(4, 1fr);
     }
-    .card.large {
-        grid-column: span 2;
-    }
-    .card.wide {
-        grid-column: span 4;
-    }
 }
+
 
 .card h2 {
     margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.1em;
-    color: #004d40;
-    font-weight: 600;
-    border-bottom: 1px solid #e0e0e0;
-    padding-bottom: 10px;
-    transition: color 0.3s ease, border-color 0.3s ease; /* For theme toggle */
+    margin-bottom: 16px; /* Increased space */
+    font-size: 1.0rem; /* Relative to body font size */
+    color: var(--primary-color-dark-light);
+    font-weight: 700; /* Bolder title */
+    padding-bottom: 8px; /* Space before content */
+    border-bottom: none; /* Cleaner look */
+    text-transform: uppercase; /* Uppercase for titles */
+    letter-spacing: 0.5px;
+    transition: color var(--transition-speed) ease;
 }
 
 .sensor-value {
-    font-size: 2.2em;
-    font-weight: 500;
-    margin: 10px 0 0 0;
-    color: #00796b;
+    font-size: 2em; /* Prominent value */
+    font-weight: 500; /* Bold but not overly so */
+    margin: auto 0 0 0; /* Push to bottom if card flex grows, align right */
+    color: var(--primary-color-light);
     text-align: right;
-    transition: color 0.3s ease; /* For theme toggle */
+    line-height: 1.1; /* Adjust for large font */
+    transition: color var(--transition-speed) ease;
+}
+.sensor-value .unit { /* Style for units if separated by span */
+    font-size: 0.5em;
+    font-weight: 400;
+    margin-left: 4px;
+    color: var(--text-color-light);
+    opacity: 0.8;
 }
 
+
+/* Gauge styles - kept as is for now, assuming they might be used later */
 .gauge-container {
     display: flex;
     flex-direction: column;
@@ -135,355 +163,482 @@ main {
     position: relative;
     height: 150px;
 }
+.gauge { /* ... existing gauge styles ... */ }
+.gauge::before { /* ... existing gauge styles ... */ }
+.gauge-arrow { /* ... existing gauge styles ... */ }
+.gauge-value { /* ... existing gauge styles ... */ }
+.gauge-min-max { /* ... existing gauge styles ... */ }
 
-.gauge {
-    width: 200px;
-    height: 100px;
-    border-radius: 150px 150px 0 0;
-    background-color: #f0f4c3;
-    position: relative;
-    overflow: hidden;
-    border: 12px solid #f0f4c3;
-    box-sizing: border-box;
-    transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease; /* For theme toggle */
-}
-
-.gauge::before {
-    content: "";
-    position: absolute;
-    top: -10px;
-    left: -10px;
-    width: 200px;
-    height: 100px;
-    border-radius: 150px 150px 0 0;
-    box-sizing: border-box;
-    border: 12px solid transparent;
-    border-top-color: #8bc34a;
-    border-right-color: #8bc34a;
-    transform-origin: 50% 100%;
-    transform: rotate(45deg);
-    transition: transform 0.3s ease, border-top-color 0.3s ease, border-right-color 0.3s ease; /* For theme toggle */
-}
-
-.gauge-arrow {
-    width: 4px;
-    height: 90px;
-    background-color: #689f38;
-    position: absolute;
-    bottom: 0px;
-    left: 50%;
-    transform-origin: 50% 100%;
-    transform: translateX(-50%) rotate(-90deg);
-    border-radius: 3px 3px 0 0;
-    z-index: 2;
-    transition: transform 0.3s ease, background-color 0.3s ease; /* For theme toggle */
-}
-
-.gauge-value {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 1.8em;
-    font-weight: bold;
-    color: #004d40;
-    z-index: 1;
-    transition: color 0.3s ease; /* For theme toggle */
-}
-
-.gauge-min-max {
-    display: flex;
-    justify-content: space-between;
-    width: 220px;
-    margin-top: 5px;
-    font-size: 0.9em;
-    color: #555;
-    transition: color 0.3s ease; /* For theme toggle */
-}
 
 .status-indicator-container {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    padding: 15px 0;
+    justify-content: flex-start; /* Default, can be overridden in specific cards */
+    padding: 10px 0; /* Adjusted padding */
+    margin-top: auto; /* Push to bottom of card if card is flex container */
 }
 
 .status-indicator {
-    width: 28px;
-    height: 28px;
-    background-color: #bdbdbd; /* Grey for OFF */
+    width: 24px; /* Slightly smaller */
+    height: 24px;
+    background-color: #bdbdbd;
     border-radius: 50%;
-    margin-right: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-    transition: background-color 0.3s ease, box-shadow 0.3s ease; /* For theme toggle */
+    margin-right: 10px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); /* Inner shadow for depth */
+    transition: background-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
 }
 
 .status-indicator.on {
-    background-color: #009688; /* Teal for ON */
-    box-shadow: 0 2px 6px rgba(0, 150, 136, 0.5);
+    background-color: var(--primary-color-light);
+    box-shadow: 0 0 8px var(--primary-color-light); /* Glow effect */
 }
 
 #coolingStatusText {
-    font-size: 1.1em;
+    font-size: 1rem;
     font-weight: 500;
-    color: #333;
-    transition: color 0.3s ease; /* For theme toggle */
+    color: var(--text-color-light);
+    transition: color var(--transition-speed) ease;
 }
 
 .switch-container {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-end; /* Align switch to the right */
+    margin-top: auto; /* Push to bottom of card */
 }
 
 .switch {
     position: relative;
     display: inline-block;
-    width: 50px;
-    height: 28px;
-    margin-top: 0;
+    width: 48px; /* Slightly smaller */
+    height: 26px;
 }
 
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
+.switch input { opacity: 0; width: 0; height: 0; }
 
 .slider {
     position: absolute;
     cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background-color: #ccc;
     transition: .4s;
+    border-radius: 26px; /* Rounded slider track */
 }
 
 .slider:before {
     position: absolute;
     content: "";
-    height: 26px;
-    width: 26px;
-    left: 4px;
-    bottom: 4px;
+    height: 20px; /* Smaller knob */
+    width: 20px;
+    left: 3px; /* Adjusted position */
+    bottom: 3px; /* Adjusted position */
     background-color: white;
     transition: .4s;
+    border-radius: 50%; /* Perfectly round knob */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 input:checked + .slider {
-    background-color: #009688; /* Teal when checked */
+    background-color: var(--primary-color-light);
 }
 
 input:focus + .slider {
-    box-shadow: 0 0 2px #009688, 0 0 4px #00796b;
+    box-shadow: 0 0 1px var(--primary-color-light);
 }
 
 input:checked + .slider:before {
-    transform: translateX(22px);
+    transform: translateX(22px); /* Adjusted travel distance */
 }
 
-.slider.round {
-    border-radius: 28px;
-}
-
-.slider.round:before {
-    border-radius: 50%;
-    height: 20px;
-    width: 20px;
-    bottom: 4px;
-    left: 4px;
-}
-
+/* Footer styling */
 footer {
     text-align: center;
-    padding: 20px;
-    background-color: #e0e0e0;
-    border-top: 1px solid #c0c0c0;
-    font-size: 0.9em;
-    color: #555;
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; /* For theme toggle */
+    padding: 25px;
+    background-color: var(--card-background-light); /* Consistent with container bg */
+    border-top: 1px solid var(--subtle-border-light);
+    font-size: 0.9rem;
+    color: var(--text-color-light);
+    opacity: 0.7; /* Slightly muted footer text */
+    transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease, border-color var(--transition-speed) ease;
 }
 
 /* Dark Theme Overrides */
 body.dark-theme {
-    background-color: #22272e;
-    color: #c9d1d9;
+    background-color: var(--background-color-dark);
+    color: var(--text-color-dark);
 }
 
 body.dark-theme .container {
-    background-color: #2d333b;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    background-color: var(--card-background-dark); /* Use card bg for container in dark */
+    box-shadow: 0 10px 30px var(--shadow-color-dark);
 }
 
 body.dark-theme header {
-    background: linear-gradient(to right, #004d40, #00251a);
-    color: #e6edf3;
+    background: linear-gradient(135deg, var(--primary-color-dark-light), #00251a); /* Darker gradient for dark theme */
 }
 
 body.dark-theme .datetime-display {
-    color: #39c6b7;
+    color: rgba(230, 237, 243, 0.8); /* Lighter text for dark header */
 }
 
 body.dark-theme .card {
-    background-color: #22272e;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    border: 1px solid #444c56;
+    background-color: var(--card-background-dark);
+    box-shadow: 0 4px 6px var(--shadow-color-dark);
+    border: 1px solid var(--subtle-border-dark);
 }
 
 body.dark-theme .card:hover {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 12px var(--shadow-color-dark);
 }
 
 body.dark-theme .card h2 {
-    color: #89ddff;
-    border-bottom: 1px solid #444c56;
+    color: var(--primary-color-dark); /* Lighter teal for titles */
 }
 
 body.dark-theme .sensor-value {
-    color: #79c0ff;
+    color: var(--primary-color-dark-dark); /* Accent blue/cyan for values */
+}
+body.dark-theme .sensor-value .unit {
+    color: var(--text-color-dark);
+    opacity: 0.7;
 }
 
-body.dark-theme .gauge {
-    background-color: #30363d;
-    border: 12px solid #30363d;
-}
+body.dark-theme .gauge { background-color: #30363d; border: 12px solid #30363d; }
+body.dark-theme .gauge::before { border-top-color: #3fb950; border-right-color: #3fb950; }
+body.dark-theme .gauge-arrow { background-color: #2da042; }
+body.dark-theme .gauge-value { color: var(--text-color-dark); }
+body.dark-theme .gauge-min-max { color: #8b949e; }
 
-body.dark-theme .gauge::before {
-    border-top-color: #3fb950;
-    border-right-color: #3fb950;
-}
-
-body.dark-theme .gauge-arrow {
-    background-color: #2da042;
-}
-
-body.dark-theme .gauge-value {
-    color: #c9d1d9;
-}
-
-body.dark-theme .gauge-min-max {
-    color: #8b949e;
-}
 
 body.dark-theme .status-indicator {
-    background-color: #444c56;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    background-color: #333a43; /* Darker grey */
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
 }
 
 body.dark-theme .status-indicator.on {
-    background-color: #3fb950;
-    box-shadow: 0 2px 6px rgba(63, 185, 80, 0.5);
+    background-color: var(--primary-color-dark); /* Use theme's primary green/teal */
+    box-shadow: 0 0 8px var(--primary-color-dark);
 }
 
 body.dark-theme #coolingStatusText {
-    color: #c9d1d9;
+    color: var(--text-color-dark);
 }
 
 body.dark-theme .slider {
-    background-color: #444c56;
+    background-color: #333a43; /* Darker track */
 }
 
 body.dark-theme .slider:before {
-    background-color: #8b949e;
+    background-color: #586069; /* Darker knob */
 }
 
 body.dark-theme input:checked + .slider {
-    background-color: #3fb950;
+    background-color: var(--primary-color-dark); /* Active color for dark theme */
 }
 
 body.dark-theme input:focus + .slider {
-    box-shadow: 0 0 2px #3fb950, 0 0 4px #2da042;
+    box-shadow: 0 0 1px var(--primary-color-dark);
 }
 
 body.dark-theme footer {
-    background-color: #1e2227;
-    border-top: 1px solid #444c56;
-    color: #8b949e;
+    background-color: var(--card-background-dark);
+    border-top: 1px solid var(--subtle-border-dark);
+    color: var(--text-color-dark);
+    opacity: 0.6;
 }
 
-/* Theme Switcher Styles (add this at the end) */
+/* Theme Switcher Styles */
+.header-right-elements { /* New style for the wrapper */
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Adjust gap between datetime and theme switch as needed */
+}
+
 .theme-switch-wrapper {
     display: flex;
     align-items: center;
-    position: absolute; /* Or fixed, depending on desired placement */
-    top: 20px;
-    right: 25px;
-    z-index: 1000; /* Ensure it's above other elements */
+    /* margin-left: auto; Removed as alignment is handled by header-right-elements */
 }
 
 .theme-switch-wrapper em {
-    margin-left: 12px;
-    font-size: 0.9rem; /* Slightly adjusted */
+    margin-right: 10px; /* Text before switch */
+    font-size: 0.8rem;
     font-weight: 500;
-    color: #004d40; /* Darker teal color for light mode for better contrast */
+    color: rgba(255, 255, 255, 0.9); /* White for light theme header */
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    transition: color 0.3s ease; /* Add transition for color change */
+    transition: color var(--transition-speed) ease;
 }
 
 body.dark-theme .theme-switch-wrapper em {
-    color: #e6edf3; /* Text color for dark theme */
+    color: rgba(230, 237, 243, 0.9); /* Light text for dark theme header */
 }
-
 
 .theme-switch {
     display: inline-block;
-    height: 28px; /* Increased height */
+    height: 26px; /* Matched to slider height */
     position: relative;
-    width: 56px; /* Increased width */
+    width: 48px; /* Matched to slider width */
 }
 
-.theme-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
+.theme-switch input { opacity: 0; width: 0; height: 0; }
 
 .theme-slider {
-    background-color: #ccc;
-    bottom: 0;
-    cursor: pointer;
-    left: 0;
-    position: absolute;
-    right: 0;
-    top: 0;
+    background-color: rgba(0,0,0,0.2); /* Semi-transparent track on header */
+    bottom: 0; cursor: pointer; left: 0; position: absolute; right: 0; top: 0;
     transition: .4s;
+    border-radius: 26px;
 }
 
 .theme-slider:before {
-    background-color: #fff;
-    bottom: 4px; 
-    content: "☀️"; /* Sun icon for light mode */
-    font-size: 14px; /* Adjust icon size */
-    line-height: 20px; /* Center icon vertically */
-    text-align: center; /* Center icon horizontally */
-    height: 20px; 
-    left: 4px;  
-    position: absolute;
+    background-color: #fff; /* Knob color */
+    bottom: 3px; content: "☀️"; font-size: 12px; line-height: 20px; text-align: center;
+    height: 20px; left: 3px; position: absolute;
     transition: .4s;
-    width: 20px; 
+    width: 20px;
+    border-radius: 50%;
 }
 
 input:checked + .theme-slider {
-    background-color: #004d40; /* Darker teal for active dark mode toggle */
+    background-color: var(--primary-color-dark); /* Active state in dark mode */
 }
-body.dark-theme input:checked + .theme-slider {
-    background-color: #58a6ff; /* A distinct blue for dark mode active toggle */
-}
+/* No specific override for light theme active, default is fine */
 
 input:checked + .theme-slider:before {
-    content: "🌙"; /* Moon icon for dark mode */
-    transform: translateX(26px); /* Adjusted for new width */
-    background-color: #2d333b; /* Knob color in dark mode */
-    color: #e6edf3; /* Icon color in dark mode */
+    content: "🌙";
+    transform: translateX(22px);
+    background-color: var(--card-background-dark); /* Dark knob for dark mode */
+    color: var(--primary-color-dark); /* Moon icon color */
 }
 
-.theme-slider.round {
-    border-radius: 28px; /* Adjusted for new height */
+/* Sidebar Styles */
+.sidebar {
+    height: 100%;
+    width: 260px;
+    position: fixed;
+    top: 0;
+    left: -260px; /* Initially hidden */
+    background-color: var(--card-background-light);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    padding-top: 20px;
+    transition: left 0.3s ease-in-out, background-color var(--transition-speed) ease;
+    z-index: 1001; /* Above content, below modals if any */
+    display: flex;
+    flex-direction: column;
 }
 
-.theme-slider.round:before {
-    border-radius: 50%;
+.sidebar.open {
+    left: 0;
+}
+
+.sidebar-header {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--subtle-border-light);
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    color: var(--primary-color-dark-light);
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.close-sidebar-btn {
+    background: none;
+    border: none;
+    color: var(--text-color-light);
+    font-size: 1.8rem;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+}
+.close-sidebar-btn:hover {
+    color: var(--primary-color-light);
+}
+
+
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0 0 0;
+    flex-grow: 1; /* Allows menu to take available space */
+    overflow-y: auto; /* Scroll if many items */
+}
+
+.sidebar-menu li a.sidebar-link {
+    display: block;
+    padding: 12px 20px;
+    text-decoration: none;
+    color: var(--text-color-light);
+    font-weight: 500;
+    border-left: 3px solid transparent;
+    transition: background-color 0.2s ease, color 0.2s ease, border-left-color 0.2s ease;
+}
+
+.sidebar-menu li a.sidebar-link:hover {
+    background-color: var(--background-color-light); /* Subtle hover */
+    color: var(--primary-color-light);
+}
+
+.sidebar-menu li a.sidebar-link.active-link {
+    background-color: var(--primary-color-light);
+    color: white;
+    border-left-color: var(--primary-color-dark-light);
+    font-weight: 600;
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: white; /* Assuming it's on dark header */
+    font-size: 1.8rem; /* Adjust size as needed */
+    cursor: pointer;
+    padding: 5px 10px 5px 0; /* Add some padding, especially on left */
+    margin-right: 15px; /* Space between button and title */
+    line-height: 1;
+}
+.sidebar-toggle:hover {
+    color: rgba(255,255,255,0.8);
+}
+
+
+.content-wrapper {
+    margin-left: 0; /* Default when sidebar is closed */
+    padding: 20px; /* Main padding for the content area */
+    transition: margin-left 0.3s ease-in-out;
+    /* width: 100%; Removed, block element will take available width */
+}
+
+.content-wrapper.sidebar-open {
+    margin-left: 260px; /* Shift content when sidebar is open */
+    /* width: calc(100% - 260px); Removed, width is implicitly viewport_width - margin_left */
+}
+
+/* View Container Styles */
+.view-container {
+    display: none; /* Hidden by default */
+    padding: 0; /* Main already has padding */
+    animation: fadeInView 0.5s ease-in-out;
+}
+
+.view-container.active-view {
+    display: block; /* Show active view */
+}
+
+@keyframes fadeInView {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Table Styles */
+.table-responsive-container {
+    overflow-x: auto; /* Allow horizontal scrolling for table on small screens */
+    background-color: var(--card-background-light);
+    padding: 20px;
+    border-radius: var(--border-radius-main);
+    box-shadow: 0 4px 6px var(--shadow-color-light);
+    border: 1px solid var(--subtle-border-light);
+    margin-top: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+table th, table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--subtle-border-light);
+    white-space: nowrap; /* Prevent text wrapping in cells initially */
+}
+
+table th {
+    background-color: var(--background-color-light);
+    color: var(--primary-color-dark-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+table tbody tr:hover {
+    background-color: var(--background-color-light);
+}
+
+table tbody tr td:first-child {
+    /* font-weight: 500; */
+}
+
+.pagination-controls {
+    padding: 20px 0;
+    text-align: center;
+}
+/* Add styles for pagination buttons later if needed */
+
+
+/* Dark Theme Sidebar & Table */
+body.dark-theme .sidebar {
+    background-color: var(--card-background-dark);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+    border-right: 1px solid var(--subtle-border-dark);
+}
+
+body.dark-theme .sidebar-header {
+    border-bottom: 1px solid var(--subtle-border-dark);
+}
+
+body.dark-theme .sidebar-header h3 {
+    color: var(--primary-color-dark);
+}
+
+body.dark-theme .close-sidebar-btn {
+    color: var(--text-color-dark);
+}
+body.dark-theme .close-sidebar-btn:hover {
+    color: var(--primary-color-dark);
+}
+
+body.dark-theme .sidebar-menu li a.sidebar-link {
+    color: var(--text-color-dark);
+}
+
+body.dark-theme .sidebar-menu li a.sidebar-link:hover {
+    background-color: var(--background-color-dark);
+    color: var(--primary-color-dark);
+}
+
+body.dark-theme .sidebar-menu li a.sidebar-link.active-link {
+    background-color: var(--primary-color-dark);
+    color: var(--background-color-dark); /* High contrast text on active link */
+    border-left-color: var(--primary-color-dark-dark);
+}
+
+body.dark-theme .sidebar-toggle {
+    color: rgba(230, 237, 243, 0.9);
+}
+body.dark-theme .sidebar-toggle:hover {
+    color: rgba(230, 237, 243, 0.7);
+}
+
+body.dark-theme .table-responsive-container {
+    background-color: var(--card-background-dark);
+    box-shadow: 0 4px 6px var(--shadow-color-dark);
+    border: 1px solid var(--subtle-border-dark);
+}
+
+body.dark-theme table th, body.dark-theme table td {
+    border-bottom: 1px solid var(--subtle-border-dark);
+}
+
+body.dark-theme table th {
+    background-color: var(--background-color-dark);
+    color: var(--primary-color-dark);
+}
+
+body.dark-theme table tbody tr:hover {
+    background-color: var(--background-color-dark);
 }

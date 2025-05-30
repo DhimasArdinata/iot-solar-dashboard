@@ -6,85 +6,125 @@
     <title>Solar Panel Cooling IoT Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <!-- Chart.js and plugin scripts removed -->
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Solar Panel Cooling System Dashboard</h1>
-            <div class="theme-switch-wrapper">
-                <label class="theme-switch" for="themeToggleCheckbox">
-                    <input type="checkbox" id="themeToggleCheckbox" aria-label="Toggle theme between light and dark mode" />
-                    <span class="theme-slider round"></span>
-                </label>
-                <em>Theme</em>
-            </div>
-        </header>
-        <p id="datetimeValue" class="datetime-display">--</p> <!-- Moved here -->
-        <main>
-            <div class="grid-container">
-                <div class="card">
-                    <h2>Suhu Panel</h2>
-                    <p id="panelTempValue" class="sensor-value">-- °C</p>
-                </div>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>Menu Navigasi</h3>
+            <button class="close-sidebar-btn" id="closeSidebarBtn" aria-label="Close sidebar">&times;</button>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="#" class="sidebar-link active-link" data-view="dashboardView">Dashboard</a></li>
+            <li><a href="#" class="sidebar-link" data-view="tableView">Data Table</a></li>
+            <!-- Add more links here as needed -->
+        </ul>
+    </nav>
 
-                <div class="card">
-                    <h2>Suhu Ambien</h2>
-                    <p id="ambientTempValue" class="sensor-value">-- °C</p>
-                </div>
-
-                <div class="card">
-                    <h2>Intensitas Cahaya</h2>
-                    <p id="lightIntensityValue" class="sensor-value">-- lx</p>
-                </div>
-
-                <div class="card">
-                    <h2>Kelembaban</h2>
-                    <p id="humidityValue" class="sensor-value">-- %</p>
-                </div>
-
-                <div class="card">
-                    <h2>Energi Panel</h2>
-                    <p id="panelEnergyValue" class="sensor-value">-- kWh</p>
-                </div>
-
-                <div class="card">
-                    <h2>Tegangan Panel</h2>
-                    <p id="panelVoltageValue" class="sensor-value">-- V</p>
-                </div>
-
-                <div class="card">
-                    <h2>Arus Panel</h2>
-                    <p id="panelCurrentValue" class="sensor-value">-- A</p>
-                </div>
-
-                <div class="card">
-                    <h2>Daya Panel</h2>
-                    <p id="panelPowerValue" class="sensor-value">-- W</p>
-                </div>
-                
-                <div class="card"> <!-- Removed "wide" class -->
-                    <h2>Status Pendingin</h2>
-                    <div class="status-indicator-container">
-                        <div class="status-indicator" id="coolingStatusIndicator"></div>
-                        <span id="coolingStatusText">OFF</span>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h2>Switch Pendingin</h2>
-                    <div class="switch-container">
-                        <label class="switch" for="coolingSwitch">
-                            <input type="checkbox" id="coolingSwitch" aria-label="Cooling System Switch">
-                            <span class="slider round"></span>
+    <div class="content-wrapper" id="contentWrapper">
+        <div class="container">
+            <header>
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                    &#9776; <!-- Hamburger icon -->
+                </button>
+                <h1>Solar Panel Cooling System Dashboard</h1>
+                <div class="header-right-elements">
+                    <p id="datetimeValue" class="datetime-display">--</p>
+                    <div class="theme-switch-wrapper">
+                        <label class="theme-switch" for="themeToggleCheckbox">
+                            <input type="checkbox" id="themeToggleCheckbox" aria-label="Toggle theme between light and dark mode" />
+                            <span class="theme-slider round"></span>
                         </label>
+                        <em>Theme</em>
                     </div>
                 </div>
-            </div>
-        </main>
-        <footer>
-            <p>IoT Dashboard v1.0</p>
-        </footer>
+            </header>
+            <main>
+                <div id="dashboardView" class="view-container active-view">
+                    <div class="grid-container">
+                        <div class="card">
+                            <h2>Suhu Panel</h2>
+                            <p id="panelTempValue" class="sensor-value">-- °C</p>
+                        </div>
+                        <div class="card">
+                            <h2>Suhu Ambien</h2>
+                            <p id="ambientTempValue" class="sensor-value">-- °C</p>
+                        </div>
+                        <div class="card">
+                            <h2>Intensitas Cahaya</h2>
+                            <p id="lightIntensityValue" class="sensor-value">-- lx</p>
+                        </div>
+                        <div class="card">
+                            <h2>Kelembaban</h2>
+                            <p id="humidityValue" class="sensor-value">-- %</p>
+                        </div>
+                        <div class="card">
+                            <h2>Energi Panel</h2>
+                            <p id="panelEnergyValue" class="sensor-value">-- kWh</p>
+                        </div>
+                        <div class="card">
+                            <h2>Tegangan Panel</h2>
+                            <p id="panelVoltageValue" class="sensor-value">-- V</p>
+                        </div>
+                        <div class="card">
+                            <h2>Arus Panel</h2>
+                            <p id="panelCurrentValue" class="sensor-value">-- A</p>
+                        </div>
+                        <div class="card">
+                            <h2>Daya Panel</h2>
+                            <p id="panelPowerValue" class="sensor-value">-- W</p>
+                        </div>
+                        <div class="card">
+                            <h2>Status Pendingin</h2>
+                            <div class="status-indicator-container">
+                                <div class="status-indicator" id="coolingStatusIndicator"></div>
+                                <span id="coolingStatusText">OFF</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h2>Switch Pendingin</h2>
+                            <div class="switch-container">
+                                <label class="switch" for="coolingSwitch">
+                                    <input type="checkbox" id="coolingSwitch" aria-label="Cooling System Switch">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tableView" class="view-container">
+                    <h2>Historical Data Table</h2>
+                    <div class="table-responsive-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Panel Temp (°C)</th>
+                                    <th>Ambient Temp (°C)</th>
+                                    <th>Light (lx)</th>
+                                    <th>Humidity (%)</th>
+                                    <th>Voltage (V)</th>
+                                    <th>Current (A)</th>
+                                    <th>Power (W)</th>
+                                    <th>Energy (kWh)</th>
+                                    <th>Cooling</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody">
+                                <!-- Data rows will be inserted here by JavaScript -->
+                                <tr><td colspan="10">Loading data or no data available...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls">
+                        <!-- Pagination controls will go here -->
+                    </div>
+                </div>
+            </main>
+            <footer>
+                <p>IoT Dashboard v1.1 (with Sidebar)</p>
+            </footer>
+        </div>
     </div>
     <script src="script.js"></script>
 </body>

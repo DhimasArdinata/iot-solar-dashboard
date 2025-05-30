@@ -234,12 +234,182 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedTheme) {
         applyTheme(savedTheme);
     } else {
-        // Optional: Detect system preference if no theme is saved
-        // if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        //     applyTheme('dark');
-        // } else {
-        //     applyTheme('light'); // Default to light if no preference
-        // }
-        applyTheme('light'); // Default to light if no preference or not detecting system pref
+        applyTheme('light'); // Default to light
     }
+
+    // --- Sidebar and View Switching Logic ---
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+    const contentWrapper = document.getElementById('contentWrapper');
+    const sidebarLinks = document.querySelectorAll('.sidebar-link');
+    const viewContainers = document.querySelectorAll('.view-container');
+
+    function openSidebar() {
+        if (sidebar) sidebar.classList.add('open');
+        if (contentWrapper) contentWrapper.classList.add('sidebar-open');
+    }
+
+    function closeSidebar() {
+        if (sidebar) sidebar.classList.remove('open');
+        if (contentWrapper) contentWrapper.classList.remove('sidebar-open');
+    }
+
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', () => {
+            if (sidebar && sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        });
+    }
+
+    if (closeSidebarBtn) {
+        closeSidebarBtn.addEventListener('click', closeSidebar);
+    }
+
+    // Optional: Close sidebar when clicking outside of it on larger screens
+    // document.addEventListener('click', (event) => {
+    //     if (sidebar && sidebar.classList.contains('open') && !sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+    //         if (window.innerWidth > 768) { // Example: only for larger screens
+    //             closeSidebar();
+    //         }
+    //     }
+    // });
+
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', (event) => {
+            event.preventDefault();
+            const targetViewId = link.getAttribute('data-view');
+
+            // Switch active view
+            viewContainers.forEach(container => {
+                container.classList.remove('active-view');
+                if (container.id === targetViewId) {
+                    container.classList.add('active-view');
+                }
+            });
+
+            // Update active link state
+            sidebarLinks.forEach(s_link => s_link.classList.remove('active-link'));
+            link.classList.add('active-link');
+
+            // Optionally close sidebar after selection (good for mobile)
+            if (window.innerWidth < 769) { // Or always, depending on preference
+                 closeSidebar();
+            }
+
+            // If switching to table view, you might want to load/refresh table data here
+            if (targetViewId === 'tableView') {
+                loadTableData(); 
+            }
+        });
+    });
+
+    // --- Data Table Logic ---
+    const dataTableBody = document.getElementById('dataTableBody');
+    const HISTORICAL_API_URL = '/.netlify/functions/api/api/historicaldata';
+
+    async function loadTableData(limit = 50, startAfterTimestamp = null) {
+        if (!dataTableBody) return;
+
+        dataTableBody.innerHTML = `<tr><td colspan="10">Loading historical data...</td></tr>`; // Show loading state
+
+        try {
+            let url = `${HISTORICAL_API_URL}?limit=${limit}`;
+            if (startAfterTimestamp) {
+                url += `&startAfterTimestamp=${encodeURIComponent(startAfterTimestamp)}`;
+            }
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const historicalData = await response.json();
+            console.log('Fetched historical data:', historicalData);
+
+            if (historicalData.length === 0) {
+                dataTableBody.innerHTML = `<tr><td colspan="10">No historical data available.</td></tr>`;
+                return;
+            }
+
+            // Data comes newest first, reverse for chronological processing for energy calculation
+            const chronologicalData = historicalData.slice().reverse(); 
+            let tableRowsHtml = '';
+            let previousTimestamp = null;
+
+            chronologicalData.forEach((record, index) => {
+                let energyForIntervalkWh = 0;
+                const currentTimestamp = record.updatedAtISO ? new Date(record.updatedAtISO) : null;
+
+                if (previousTimestamp && currentTimestamp && record.panelPower !== null && record.panelPower !== undefined) {
+                    const timeDeltaSeconds = (currentTimestamp.getTime() - previousTimestamp.getTime()) / 1000;
+                    if (timeDeltaSeconds > 0) {
+                        const timeDeltaHours = timeDeltaSeconds / 3600;
+                        // Energy (kWh) = Power (kW) * time (h)
+                        // panelPower is in Watts, so convert to kW
+                        energyForIntervalkWh = (record.panelPower / 1000) * timeDeltaHours;
+                    }
+                }
+                
+                // Prepare data for display, handling potential nulls
+                const displayRecord = {
+                    timestamp: currentTimestamp ? currentTimestamp.toLocaleString() : 'N/A',
+                    panelTemp: record.panelTemp !== null && record.panelTemp !== undefined ? record.panelTemp.toFixed(1) : 'N/A',
+                    ambientTemp: record.ambientTemp !== null && record.ambientTemp !== undefined ? record.ambientTemp.toFixed(1) : 'N/A',
+                    lightIntensity: record.lightIntensity !== null && record.lightIntensity !== undefined ? record.lightIntensity.toFixed(0) : 'N/A',
+                    humidity: record.humidity !== null && record.humidity !== undefined ? record.humidity.toFixed(0) : 'N/A',
+                    panelVoltage: record.panelVoltage !== null && record.panelVoltage !== undefined ? record.panelVoltage.toFixed(1) : 'N/A',
+                    panelCurrent: record.panelCurrent !== null && record.panelCurrent !== undefined ? record.panelCurrent.toFixed(2) : 'N/A',
+                    panelPower: record.panelPower !== null && record.panelPower !== undefined ? record.panelPower.toFixed(1) : 'N/A',
+                    energy: energyForIntervalkWh.toFixed(5), // Display calculated interval energy
+                    coolingStatus: record.coolingStatus ? 'ON' : (record.coolingStatus !== undefined ? 'OFF' : 'N/A') // Handle undefined coolingStatus
+                };
+                
+                // Handle ssr states for coolingStatus if direct coolingStatus is not present
+                // This logic depends on what's stored. Assuming 'coolingStatus' is now directly stored based on ssr states.
+                // If not, and only ssr1, ssr3, ssr4 are stored:
+                // displayRecord.coolingStatus = (record.ssr1 || record.ssr3 || record.ssr4) ? 'ON' : 'OFF';
+
+
+                tableRowsHtml += `
+                    <tr>
+                        <td>${displayRecord.timestamp}</td>
+                        <td>${displayRecord.panelTemp}</td>
+                        <td>${displayRecord.ambientTemp}</td>
+                        <td>${displayRecord.lightIntensity}</td>
+                        <td>${displayRecord.humidity}</td>
+                        <td>${displayRecord.panelVoltage}</td>
+                        <td>${displayRecord.panelCurrent}</td>
+                        <td>${displayRecord.panelPower}</td>
+                        <td>${displayRecord.energy}</td>
+                        <td>${displayRecord.coolingStatus}</td>
+                    </tr>
+                `;
+                previousTimestamp = currentTimestamp;
+            });
+
+            dataTableBody.innerHTML = tableRowsHtml;
+
+            // Basic pagination idea (needs UI buttons and state management)
+            // if (historicalData.length === limit && historicalData.length > 0) {
+            //     const lastRecordTimestamp = historicalData[0].updatedAtISO; // Newest record (original order)
+            //     // Add a "Load More" button or similar, passing lastRecordTimestamp
+            // }
+
+        } catch (error) {
+            console.error("Could not fetch historical data:", error);
+            if (dataTableBody) {
+                dataTableBody.innerHTML = `<tr><td colspan="10">Error loading historical data.</td></tr>`;
+            }
+        }
+    }
+
+    // Ensure the default view (Dashboard) is shown on page load
+    // This is handled by the 'active-view' class set in HTML initially.
+    // If not, you could add:
+    // document.getElementById('dashboardView')?.classList.add('active-view');
+    // document.querySelector('.sidebar-link[data-view="dashboardView"]')?.classList.add('active-link');
+
 });

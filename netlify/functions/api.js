@@ -38,6 +38,7 @@ const FieldValue = admin.firestore.FieldValue; // For server timestamps
 
 const SENSOR_READINGS_COLLECTION = 'sensor_readings';
 const LATEST_SENSOR_DOC_ID = 'latest_data';
+const SENSOR_HISTORY_COLLECTION = 'sensor_history'; // New collection for historical data
 const CONTROL_STATES_COLLECTION = 'control_states';
 const CURRENT_CONTROL_DOC_ID = 'current_control';
 
@@ -144,27 +145,47 @@ app.post('/api/update', async (req, res) => {
         humidity: data.h_dht !== undefined ? parseFloat(data.h_dht) : null,
         panelVoltage: data.voltage !== undefined ? parseFloat(data.voltage) : null,
         panelCurrent: data.current !== undefined ? parseFloat(data.current) : null,
-        panelPower: data.power !== undefined ? parseFloat(data.power) : null,
-        panelEnergy: data.energy !== undefined ? parseFloat(data.energy) : null,
+        // panelPower will be calculated below if voltage and current are available
+        panelEnergy: data.energy !== undefined ? parseFloat(data.energy) : null, // Still accepts energy from ESP32 if sent
         ssr1: data.ssr1 !== undefined ? Boolean(data.ssr1) : false,
         ssr3: data.ssr3 !== undefined ? Boolean(data.ssr3) : false,
         ssr4: data.ssr4 !== undefined ? Boolean(data.ssr4) : false,
         manualMode: data.globalManualMode !== undefined ? Boolean(data.globalManualMode) : false, // ESP32's physical switch state
         updatedAt: FieldValue.serverTimestamp()
+        // panelPower is intentionally omitted here, will be added next
     };
+
+    // Calculate panelPower if voltage and current are available
+    if (newSensorData.panelVoltage !== null && newSensorData.panelCurrent !== null && 
+        !isNaN(newSensorData.panelVoltage) && !isNaN(newSensorData.panelCurrent)) {
+        newSensorData.panelPower = parseFloat((newSensorData.panelVoltage * newSensorData.panelCurrent).toFixed(2));
+    } else {
+        newSensorData.panelPower = null; // Set to null if calculation is not possible
+    }
+    
     // Filter out null values to avoid overwriting existing fields with null if ESP sends partial data
+    // However, we explicitly want to store null for panelPower if it cannot be calculated.
+    // So, the filter should be adjusted or panelPower should be handled carefully if it's null.
+    // For now, if panelPower is calculated as null, it will be stored as null.
     const filteredSensorData = Object.fromEntries(Object.entries(newSensorData).filter(([_, v]) => v !== null));
+    // If panelPower was calculated as null and you want to ensure it's written as null (not filtered out):
+    if (newSensorData.panelPower === null && !('panelPower' in filteredSensorData)) {
+        filteredSensorData.panelPower = null;
+    }
 
 
     try {
-        const docRef = db.collection(SENSOR_READINGS_COLLECTION).doc(LATEST_SENSOR_DOC_ID);
-        // Using set with merge:true ensures the document is created if it doesn't exist,
-        // and existing fields are updated, new fields are added.
-        await docRef.set(filteredSensorData, { merge: true });
-        res.status(200).json({ message: 'Data updated successfully in Firestore' });
+        // 1. Update the 'latest_data' document (for real-time dashboard)
+        const latestDocRef = db.collection(SENSOR_READINGS_COLLECTION).doc(LATEST_SENSOR_DOC_ID);
+        await latestDocRef.set(filteredSensorData, { merge: true });
+
+        // 2. Add a new document to the 'sensor_history' collection
+        await db.collection(SENSOR_HISTORY_COLLECTION).add(filteredSensorData);
+        
+        res.status(200).json({ message: 'Data updated successfully and logged to history' });
     } catch (error) {
-        console.error("Firestore update error for /api/update:", error);
-        res.status(500).json({ message: 'Failed to update data in Firestore' });
+        console.error("Firestore update/history log error for /api/update:", error);
+        res.status(500).json({ message: 'Failed to update data and log to history in Firestore' });
     }
 });
 
@@ -221,6 +242,66 @@ app.get('/api/getcontrol', async (req, res) => {
         res.status(500).json({ ...DEFAULT_CONTROL_VALUES, error: "Could not fetch control state" });
     }
 });
+
+// GET historical sensor data
+app.get('/api/historicaldata', async (req, res) => {
+    if (!admin.apps.length) {
+        return res.status(503).json({ message: 'Firebase not initialized. Check server logs.' });
+    }
+    try {
+        const historyLimit = parseInt(req.query.limit) || 50; // Default to 50 records
+        let query = db.collection(SENSOR_HISTORY_COLLECTION)
+                      .orderBy('updatedAt', 'desc') // Assuming 'updatedAt' is the Firestore server timestamp
+                      .limit(historyLimit);
+
+        // Basic pagination: if 'startAfterTimestamp' is provided, use it to get the next page
+        // For this to work, 'startAfterTimestamp' should be the 'updatedAt' value of the last item from the previous page
+        // And it needs to be a valid Firestore Timestamp object or an ISO string that can be parsed.
+        // For simplicity, this example assumes client sends an ISO string if paginating.
+        if (req.query.startAfterTimestamp) {
+            // Firestore's startAfter() expects the actual value from the document,
+            // if 'updatedAt' is a Firestore Timestamp, you'd need to pass that.
+            // If client sends ISO string, convert it. For server Timestamps, this is tricky.
+            // A simpler pagination for server timestamps might involve client sending the whole last document's snapshot.
+            // For now, this is a simplified placeholder for cursor-based pagination.
+            // A more robust solution would involve sending the actual DocumentSnapshot reference or specific field values.
+            // Let's assume for now client might send an ISO string of the last 'updatedAt'
+            try {
+                 const startAfterDate = new Date(req.query.startAfterTimestamp);
+                 if (!isNaN(startAfterDate)) {
+                    query = query.startAfter(admin.firestore.Timestamp.fromDate(startAfterDate));
+                 } else if (req.query.startAfterTimestamp === "firstPage") {
+                    // do nothing, it's the first page
+                 } else {
+                    console.warn("Invalid startAfterTimestamp received:", req.query.startAfterTimestamp);
+                 }
+            } catch(e){
+                console.warn("Error parsing startAfterTimestamp:", e);
+            }
+        }
+
+        const snapshot = await query.get();
+
+        if (snapshot.empty) {
+            return res.status(200).json([]);
+        }
+
+        const historicalData = [];
+        snapshot.forEach(doc => {
+            let data = doc.data();
+            // Convert Firestore Timestamp to ISO string for easier client-side handling
+            if (data.updatedAt && typeof data.updatedAt.toDate === 'function') {
+                data.updatedAtISO = data.updatedAt.toDate().toISOString();
+            }
+            historicalData.push({ id: doc.id, ...data });
+        });
+        res.json(historicalData);
+    } catch (error) {
+        console.error("Firestore read error for /api/historicaldata:", error);
+        res.status(500).json({ message: 'Failed to retrieve historical data', details: error.message });
+    }
+});
+
 
 // Netlify handler function
 const handler = serverless(app);
