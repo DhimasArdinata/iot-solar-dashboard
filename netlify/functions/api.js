@@ -115,7 +115,7 @@ app.get('/api/sensordata', async (req, res) => {
             // If web manual control is active, show its state, otherwise show actual cooler state from sensors
             coolingStatus: mergedControlState.manualModeActive
                            ? mergedControlState.manualCoolerState
-                           : (mergedSensorData.ssr1 || mergedSensorData.ssr3 || mergedSensorData.ssr4),
+                           : (mergedSensorData.ssr1 || mergedSensorData.ssr2 || mergedSensorData.ssr3 || mergedSensorData.ssr4), // Added ssr2
             manualMode: mergedControlState.manualModeActive // Reflects if the web UI switch is in 'manual'
         };
         res.json(displayData);
@@ -159,6 +159,7 @@ app.post('/api/update', async (req, res) => {
         // panelPower will be calculated below if voltage and current are available
         panelEnergy: data.energy !== undefined ? parseFloat(data.energy) : null, // Still accepts energy from ESP32 if sent
         ssr1: data.ssr1 !== undefined ? Boolean(data.ssr1) : false,
+        ssr2: data.ssr2 !== undefined ? Boolean(data.ssr2) : false, // Added ssr2
         ssr3: data.ssr3 !== undefined ? Boolean(data.ssr3) : false,
         ssr4: data.ssr4 !== undefined ? Boolean(data.ssr4) : false,
         manualMode: data.globalManualMode !== undefined ? Boolean(data.globalManualMode) : false, // ESP32's physical switch state

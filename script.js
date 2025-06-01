@@ -112,20 +112,50 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Control Switch Handler ---
     async function handleCoolingSwitchChange() {
         if (!coolingSwitch) return;
-        const newState = coolingSwitch.checked;
+        const isChecked = coolingSwitch.checked; // true if switch is ON, false if switch is OFF
+        
+        let payload;
+        if (isChecked) {
+            // User wants to turn the cooler ON manually via the web dashboard
+            console.log('Dashboard switch: Manual ON');
+            payload = { manualMode: true, coolerState: true };
+        } else {
+            // User wants to turn the cooler OFF via the web dashboard,
+            // which we interpret as "relinquish web manual control, let ESP32 decide (auto mode)"
+            console.log('Dashboard switch: Reverting to ESP32 Auto Control');
+            payload = { manualMode: false, coolerState: false }; // coolerState: false is a safe default for this action
+        }
+
         try {
             const response = await fetch(CONTROL_API_URL, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ manualMode: true, coolerState: newState }),
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
             });
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            await response.json(); // console.log('Control command result:', result);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: "Unknown error processing control command." }));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('Control command result:', result);
+            // After sending the command, fetchData() will eventually run and update the UI
+            // to reflect the true state based on what the ESP32 reports (if auto) 
+            // or what was just set (if manual).
+            // No immediate UI reversion here, let the normal data flow update it.
         } catch (error) {
             console.error("Error sending control command:", error);
-            coolingSwitch.checked = !newState;
-            if (coolingStatusIndicator && coolingStatusText) {
-                coolingStatusIndicator.classList.toggle('on', !newState);
-                coolingStatusText.textContent = !newState ? 'ON' : 'OFF';
+            // Revert the switch on error ONLY if we tried to set it to manual ON and failed.
+            // If we tried to set to AUTO (manualMode: false), an error means server didn't get it,
+            // so ESP32 might still be in web manual mode. Reverting the switch might be confusing.
+            // For now, let's just log the error. A more robust solution might involve reading back state.
+            // coolingSwitch.checked = !isChecked; // Potentially revert, but can be complex to get right
+            // For simplicity, we won't revert here. The next fetchData should correct the display.
+            if (settingsStatusMsg && document.getElementById('settingsView').classList.contains('active-view')) {
+                // If on settings page, show error there, otherwise just console.
+            } else if (coolingStatusText) {
+                 // Maybe a small, temporary error indication on the dashboard itself.
             }
         }
     }
