@@ -9,10 +9,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const panelCurrentValue = document.getElementById('panelCurrentValue');
     const panelPowerValue = document.getElementById('panelPowerValue');
     const datetimeValue = document.getElementById('datetimeValue');
-    const coolingStatusIndicator = document.getElementById('coolingStatusIndicator');
-    const coolingStatusText = document.getElementById('coolingStatusText');
-    const coolingSwitch = document.getElementById('coolingSwitch');
+    const coolingStatusIndicator = document.getElementById('coolingStatusIndicator'); // For the "Status Pendingin" card
+    const coolingStatusText = document.getElementById('coolingStatusText'); // For the "Status Pendingin" card
+    
     const themeToggleCheckbox = document.getElementById('themeToggleCheckbox');
+
+    // NEW DOM Elements for Web Control Card
+    const webOverrideSwitch = document.getElementById('webOverrideSwitch');
+    const manualCoolerStateSwitch = document.getElementById('manualCoolerStateSwitch');
+    const manualCoolerControlContainer = document.getElementById('manualCoolerControlContainer');
+
 
     // API URLs
     const API_URL = '/.netlify/functions/api/api/sensordata';
@@ -22,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dashboard State
     let lastSuccessfulData = null;
-    let totalEnergyJoules = 0; // For session-based energy accumulation on dashboard card
+    let totalEnergyJoules = 0; 
     const FETCH_INTERVAL_SECONDS = 5;
 
     // Sidebar and View Switching Elements
@@ -36,8 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Data Table Elements & Pagination State
     const dataTableBody = document.getElementById('dataTableBody');
     const loadMoreBtn = document.getElementById('loadMoreBtn');
-    let lastFetchedOldestTimestamp = null; // For data table pagination: ISO string
-    const RECORDS_PER_PAGE = 50; // Should match backend limit if not passed in URL
+    let lastFetchedOldestTimestamp = null; 
+    const RECORDS_PER_PAGE = 50; 
 
     // Settings View Elements
     const ambientTempThresholdInput = document.getElementById('ambientTempThresholdInput');
@@ -89,12 +95,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (panelEnergyValue) panelEnergyValue.textContent = (totalEnergyJoules / 3600000).toFixed(3) + " kWh";
 
+        // Update "Status Pendingin" card (this always shows the actual cooling status)
         if (coolingStatusIndicator && coolingStatusText) {
             const isOn = data.coolingStatus === true;
             coolingStatusIndicator.classList.toggle('on', isOn);
             coolingStatusText.textContent = data.coolingStatus !== undefined ? (isOn ? 'ON' : 'OFF') : "N/A";
         }
-        if (coolingSwitch && data.coolingStatus !== undefined) coolingSwitch.checked = data.coolingStatus;
+
+        // Update "Kontrol Pendingin Web" card switches
+        if (webOverrideSwitch) {
+            webOverrideSwitch.checked = data.manualMode === true; // manualMode from server indicates web override is active
+        }
+        if (manualCoolerStateSwitch && manualCoolerControlContainer) {
+            if (data.manualMode === true) { // If web override is active
+                manualCoolerControlContainer.style.opacity = '1';
+                manualCoolerStateSwitch.disabled = false;
+                // The actual coolingStatus (when manualMode is true) IS the manualCoolerState from server
+                manualCoolerStateSwitch.checked = data.coolingStatus === true; 
+            } else { // Web override is NOT active (ESP32 is in auto mode)
+                manualCoolerControlContainer.style.opacity = '0.5';
+                manualCoolerStateSwitch.disabled = true;
+                // Reflect the ESP32's auto state on the (disabled) manual switch as well for consistency
+                manualCoolerStateSwitch.checked = data.coolingStatus === true; 
+            }
+        }
     }
 
     // --- Display Error State for Main Dashboard ---
@@ -107,60 +131,65 @@ document.addEventListener('DOMContentLoaded', () => {
         if (panelEnergyValue) panelEnergyValue.textContent = "0.000 kWh";
         if (coolingStatusText) coolingStatusText.textContent = "Error";
         if (coolingStatusIndicator) coolingStatusIndicator.classList.remove('on');
+        // Also reset web control switches to a safe default (e.g., override off)
+        if (webOverrideSwitch) webOverrideSwitch.checked = false;
+        if (manualCoolerStateSwitch) {
+            manualCoolerStateSwitch.checked = false;
+            manualCoolerStateSwitch.disabled = true;
+        }
+        if (manualCoolerControlContainer) manualCoolerControlContainer.style.opacity = '0.5';
     }
 
-    // --- Control Switch Handler ---
-    async function handleCoolingSwitchChange() {
-        if (!coolingSwitch) return;
-        const isChecked = coolingSwitch.checked; // true if switch is ON, false if switch is OFF
-        
-        let payload;
-        if (isChecked) {
-            // User wants to turn the cooler ON manually via the web dashboard
-            console.log('Dashboard switch: Manual ON');
-            payload = { manualMode: true, coolerState: true };
-        } else {
-            // User wants to turn the cooler OFF via the web dashboard,
-            // which we interpret as "relinquish web manual control, let ESP32 decide (auto mode)"
-            console.log('Dashboard switch: Reverting to ESP32 Auto Control');
-            payload = { manualMode: false, coolerState: false }; // coolerState: false is a safe default for this action
-        }
-
+    // --- Send Control Command Function ---
+    async function sendControlCommand(manualMode, coolerState) {
         try {
             const response = await fetch(CONTROL_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+                body: JSON.stringify({ manualMode, coolerState }),
             });
-
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: "Unknown error processing control command." }));
                 throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
             }
-            
             const result = await response.json();
-            console.log('Control command result:', result);
-            // After sending the command, fetchData() will eventually run and update the UI
-            // to reflect the true state based on what the ESP32 reports (if auto) 
-            // or what was just set (if manual).
-            // No immediate UI reversion here, let the normal data flow update it.
+            console.log('Control command sent:', { manualMode, coolerState }, 'Result:', result);
+            // UI will update via the next fetchData call, reflecting the new state from the server.
         } catch (error) {
             console.error("Error sending control command:", error);
-            // Revert the switch on error ONLY if we tried to set it to manual ON and failed.
-            // If we tried to set to AUTO (manualMode: false), an error means server didn't get it,
-            // so ESP32 might still be in web manual mode. Reverting the switch might be confusing.
-            // For now, let's just log the error. A more robust solution might involve reading back state.
-            // coolingSwitch.checked = !isChecked; // Potentially revert, but can be complex to get right
-            // For simplicity, we won't revert here. The next fetchData should correct the display.
-            if (settingsStatusMsg && document.getElementById('settingsView').classList.contains('active-view')) {
-                // If on settings page, show error there, otherwise just console.
-            } else if (coolingStatusText) {
-                 // Maybe a small, temporary error indication on the dashboard itself.
-            }
+            // Optionally, provide user feedback about the error
+            // Reverting switch states here can be complex due to async nature;
+            // rely on fetchData to eventually show the true state.
         }
     }
-    if (coolingSwitch) coolingSwitch.addEventListener('change', handleCoolingSwitchChange);
 
+    // --- Event Listener for Web Override Switch ---
+    if (webOverrideSwitch) {
+        webOverrideSwitch.addEventListener('change', () => {
+            const isWebOverrideActive = webOverrideSwitch.checked;
+            if (manualCoolerStateSwitch && manualCoolerControlContainer) {
+                manualCoolerStateSwitch.disabled = !isWebOverrideActive;
+                manualCoolerControlContainer.style.opacity = isWebOverrideActive ? '1' : '0.5';
+            }
+            if (isWebOverrideActive) {
+                // When web override is turned ON, send current state of manualCoolerStateSwitch
+                sendControlCommand(true, manualCoolerStateSwitch ? manualCoolerStateSwitch.checked : false);
+            } else {
+                // When web override is turned OFF, tell ESP32 to go to auto mode
+                sendControlCommand(false, false); // coolerState: false is a safe default
+            }
+        });
+    }
+
+    // --- Event Listener for Manual Cooler State Switch ---
+    if (manualCoolerStateSwitch) {
+        manualCoolerStateSwitch.addEventListener('change', () => {
+            if (webOverrideSwitch && webOverrideSwitch.checked) { // Only send if web override is active
+                sendControlCommand(true, manualCoolerStateSwitch.checked);
+            }
+        });
+    }
+    
     // --- Theme Switcher Logic ---
     function applyTheme(theme) {
         document.body.classList.toggle('dark-theme', theme === 'dark');
@@ -194,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
             link.classList.add('active-link');
             if (window.innerWidth < 769) closeSidebar();
 
-            if (targetViewId === 'tableView') loadTableData(false); // Initial load for table view
+            if (targetViewId === 'tableView') loadTableData(false);
             if (targetViewId === 'settingsView') loadCoolingSettings();
         });
     });
@@ -202,13 +231,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Data Table Logic ---
     async function loadTableData(fetchMore = false) {
         if (!dataTableBody) return;
-        if (!fetchMore) { // Initial load or view switch
+        if (!fetchMore) {
             dataTableBody.innerHTML = `<tr><td colspan="10">Loading historical data...</td></tr>`;
-            lastFetchedOldestTimestamp = null; // Reset for a fresh load
+            lastFetchedOldestTimestamp = null;
         } else {
-            if (loadMoreBtn) loadMoreBtn.disabled = true; // Disable button while loading more
-            dataTableBody.querySelector('.loading-more-row')?.remove(); // Remove previous loading more indicator
-            const loadingRow = dataTableBody.insertRow();
+            if (loadMoreBtn) loadMoreBtn.disabled = true;
+            dataTableBody.querySelector('.loading-more-row')?.remove();
+            const loadingRow = dataTableBody.insertRow(); // Appends at the end
             loadingRow.className = 'loading-more-row';
             loadingRow.innerHTML = `<td colspan="10">Loading more data...</td>`;
         }
@@ -221,34 +250,24 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const response = await fetch(url);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const historicalData = await response.json(); // API sends newest first
+            const historicalData = await response.json();
 
-            if (!fetchMore) dataTableBody.innerHTML = ''; // Clear for initial load after fetch success
+            dataTableBody.querySelector('.loading-more-row')?.remove();
+            if (!fetchMore) dataTableBody.innerHTML = ''; 
 
-            if (historicalData.length === 0 && !fetchMore) {
-                dataTableBody.innerHTML = `<tr><td colspan="10">No historical data available.</td></tr>`;
-                if (loadMoreBtn) loadMoreBtn.style.display = 'none';
-                return;
-            }
-            if (historicalData.length === 0 && fetchMore) {
-                 dataTableBody.querySelector('.loading-more-row')?.remove();
-                 // Optionally add a message "No more data"
+            if (historicalData.length === 0) {
+                if (!fetchMore) dataTableBody.innerHTML = `<tr><td colspan="10">No historical data available.</td></tr>`;
                 if (loadMoreBtn) loadMoreBtn.style.display = 'none';
                 return;
             }
             
-            dataTableBody.querySelector('.loading-more-row')?.remove();
-
-
-            const chronologicalData = historicalData.slice().reverse(); // Sort to oldest first for processing
-            let rowsToAppend = '';
+            const chronologicalData = historicalData.slice().reverse();
+            let rowsToAppendHTML = '';
 
             chronologicalData.forEach((record, index) => {
                 let energyForThisIntervalkWh = 0;
                 const currentTimestamp = record.updatedAtISO ? new Date(record.updatedAtISO) : null;
-
                 if (currentTimestamp && record.panelPower !== null && record.panelPower !== undefined) {
-                    // For energy calculation: use this record's power and duration until NEXT record
                     if (index < chronologicalData.length - 1) {
                         const nextRecord = chronologicalData[index + 1];
                         const nextTimestamp = nextRecord.updatedAtISO ? new Date(nextRecord.updatedAtISO) : null;
@@ -261,8 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 const coolingStatusVal = record.coolingStatus !== undefined ? (record.coolingStatus ? 'ON' : 'OFF') :
-                                     ((record.ssr1 || record.ssr3 || record.ssr4) ? 'ON' : 'OFF');
-                rowsToAppend += `
+                                     ((record.ssr1 || record.ssr2 || record.ssr3 || record.ssr4) ? 'ON' : 'OFF');
+                rowsToAppendHTML += `
                     <tr>
                         <td>${currentTimestamp ? currentTimestamp.toLocaleString() : 'N/A'}</td>
                         <td>${record.panelTemp?.toFixed(1) ?? 'N/A'}</td>
@@ -276,30 +295,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td>${coolingStatusVal}</td>
                     </tr>`;
             });
-            dataTableBody.innerHTML += rowsToAppend; // Append new rows
+            dataTableBody.innerHTML += rowsToAppendHTML;
 
             if (historicalData.length > 0) {
-                // API returns newest first, so historicalData[length-1] is the oldest in this batch
                 lastFetchedOldestTimestamp = historicalData[historicalData.length - 1].updatedAtISO;
             }
-
             if (loadMoreBtn) {
                 loadMoreBtn.style.display = historicalData.length === RECORDS_PER_PAGE ? 'inline-block' : 'none';
                 loadMoreBtn.disabled = false;
             }
-
         } catch (error) {
             console.error("Could not fetch historical data:", error);
             dataTableBody.querySelector('.loading-more-row')?.remove();
             if (!fetchMore && dataTableBody) dataTableBody.innerHTML = `<tr><td colspan="10">Error loading historical data.</td></tr>`;
-            if (loadMoreBtn) loadMoreBtn.style.display = 'none'; // Hide on error
+            if (loadMoreBtn) loadMoreBtn.style.display = 'none';
         }
     }
-    
-    if (loadMoreBtn) {
-        loadMoreBtn.addEventListener('click', () => loadTableData(true));
-    }
-
+    if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => loadTableData(true));
 
     // --- Cooling Settings Logic ---
     async function loadCoolingSettings() {
@@ -359,15 +371,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveCoolingSettingsBtn) saveCoolingSettingsBtn.addEventListener('click', saveCoolingSettings);
 
     // Initial Setup
-    fetchData(); // Initial fetch for dashboard cards
-    setInterval(fetchData, FETCH_INTERVAL_SECONDS * 1000); // Periodic fetch for dashboard cards
+    fetchData(); 
+    setInterval(fetchData, FETCH_INTERVAL_SECONDS * 1000); 
 
-    // Initial view setup (ensure correct view is active and loads its data if necessary)
     const initialActiveView = document.querySelector('.view-container.active-view');
     if (initialActiveView) {
         if (initialActiveView.id === 'tableView') loadTableData(false);
         if (initialActiveView.id === 'settingsView') loadCoolingSettings();
-    } else { // Default to dashboardView if no view is marked active in HTML
+    } else { 
         document.getElementById('dashboardView')?.classList.add('active-view');
         document.querySelector('.sidebar-link[data-view="dashboardView"]')?.classList.add('active-link');
     }

@@ -83,12 +83,24 @@
                             </div>
                         </div>
                         <div class="card">
-                            <h2><i class="fas fa-toggle-on"></i> Switch Pendingin</h2>
-                            <div class="switch-container">
-                                <label class="switch" for="coolingSwitch">
-                                    <input type="checkbox" id="coolingSwitch" aria-label="Cooling System Switch">
-                                    <span class="slider round"></span>
-                                </label>
+                            <h2>Kontrol Pendingin Web</h2>
+                            <div class="setting-item"> <!-- Re-using setting-item style for layout -->
+                                <label for="webOverrideSwitch">Aktifkan Kontrol Web:</label>
+                                <div class="switch-container" style="justify-content: flex-start;">
+                                    <label class="switch" for="webOverrideSwitch">
+                                        <input type="checkbox" id="webOverrideSwitch" aria-label="Activate Web Control Override">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="setting-item" id="manualCoolerControlContainer" style="margin-top: 15px;">
+                                <label for="manualCoolerStateSwitch">Status Pendingin Manual:</label>
+                                <div class="switch-container" style="justify-content: flex-start;">
+                                    <label class="switch" for="manualCoolerStateSwitch">
+                                        <input type="checkbox" id="manualCoolerStateSwitch" aria-label="Manual Cooler State On/Off">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
