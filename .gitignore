@@ -29,3 +29,14 @@ cooler-panel-surya-firebase-adminsdk-fbsvc-70bfa4e384.json
 
 # Test scripts
 send_dummy_data.js
+
+# Project Specific Ignored Files
+platformio/
+.vscode/
+system_diagrams.html
+temp_base64.txt
+vercel.json
+.pio/
+build/
+libdeps/
+esp32_api_controller/

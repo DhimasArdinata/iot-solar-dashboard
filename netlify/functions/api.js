@@ -367,29 +367,74 @@ app.get('/api/cooling-settings', async (req, res) => {
         return res.status(503).json({ message: 'Firebase not initialized.' });
     }
     try {
-        const docRef = db.collection(CONFIGURATION_COLLECTION).doc(COOLING_SETTINGS_DOC_ID);
-        const docSnap = await docRef.get();
+        // 1. Fetch the latest sensor data (t_ds and t_dht)
+        const sensorDocRef = db.collection(SENSOR_READINGS_COLLECTION).doc(LATEST_SENSOR_DOC_ID);
+        const sensorDocSnap = await sensorDocRef.get();
+        
+        let latest_t_ds = null;
+        let latest_t_dht = null;
 
-        if (docSnap.exists) {
-            res.json(docSnap.data());
+        if (sensorDocSnap.exists) {
+            const sensorData = sensorDocSnap.data();
+            latest_t_ds = sensorData.panelTemp !== undefined ? sensorData.panelTemp : null;
+            latest_t_dht = sensorData.ambientTemp !== undefined ? sensorData.ambientTemp : null;
+            console.log(`[API] Fetched latest t_ds: ${latest_t_ds}, t_dht: ${latest_t_dht}`);
         } else {
-            // If no settings exist, return default or an empty object
-            // Consider what the ESP32 should do if no threshold is set.
-            // For now, returning a default might be safer.
-            const defaultCoolingSettings = { 
-                ambientTempCoolingThreshold: 30.0, // Example default
-                // Add other default settings here if any
-                updatedAt: FieldValue.serverTimestamp() // Or null if you prefer
-            };
-            // Optionally, create the default settings document if it doesn't exist
-            // await docRef.set(defaultCoolingSettings); 
-            // res.json(defaultCoolingSettings);
-            // For now, just indicate not found or return empty/default structure
-            res.status(200).json({ ambientTempCoolingThreshold: null }); // Or your preferred default
+            console.warn("[API] Latest sensor data not found. Cannot determine t_ds or t_dht.");
         }
+
+        // 2. Fetch the user-defined cooling threshold
+        const configDocRef = db.collection(CONFIGURATION_COLLECTION).doc(COOLING_SETTINGS_DOC_ID);
+        const configDocSnap = await configDocRef.get();
+        
+        let userSetThreshold = null;
+        if (configDocSnap.exists && configDocSnap.data().ambientTempCoolingThreshold !== undefined) {
+            userSetThreshold = configDocSnap.data().ambientTempCoolingThreshold;
+            console.log(`[API] Fetched user-set threshold: ${userSetThreshold}`);
+        } else {
+            console.warn("[API] User-set cooling threshold not found. Using null.");
+        }
+
+        let manipulatedThresholdForESP = null; // This is what we'll send to the ESP32
+
+        // Determine if cooling should be active based on t_ds and userSetThreshold
+        let shouldCoolBasedOnDs = false;
+        if (latest_t_ds !== null && userSetThreshold !== null && !isNaN(latest_t_ds) && !isNaN(userSetThreshold)) {
+            shouldCoolBasedOnDs = (latest_t_ds > userSetThreshold);
+            console.log(`[API] t_ds (${latest_t_ds}) > userSetThreshold (${userSetThreshold})? ${shouldCoolBasedOnDs}`);
+        } else {
+            console.warn("[API] Cannot determine cooling state based on t_ds and userSetThreshold (invalid values).");
+        }
+
+        // Construct the manipulated threshold for the ESP32
+        if (latest_t_dht !== null && !isNaN(latest_t_dht) && latest_t_dht > -50.0) { // Check if t_dht is valid
+            if (shouldCoolBasedOnDs) {
+                // If we want cooling ON (because t_ds > userSetThreshold)
+                // Send a threshold that is guaranteed to be less than t_dht
+                manipulatedThresholdForESP = latest_t_dht - 1.0; // Make t_dht > threshold true
+                console.log(`[API] Desired: ON. Sending manipulated threshold: ${manipulatedThresholdForESP} (t_dht - 1.0)`);
+            } else {
+                // If we want cooling OFF (because t_ds <= userSetThreshold)
+                // Send a threshold that is guaranteed to be greater than t_dht
+                manipulatedThresholdForESP = latest_t_dht + 1.0; // Make t_dht > threshold false
+                console.log(`[API] Desired: OFF. Sending manipulated threshold: ${manipulatedThresholdForESP} (t_dht + 1.0)`);
+            }
+        } else {
+            // Fallback if t_dht is invalid or not available
+            // Send a very high threshold to ensure relays stay OFF
+            manipulatedThresholdForESP = 100.0; 
+            console.warn("[API] t_dht invalid or not available. Sending high threshold to keep relays OFF.");
+        }
+
+        const responsePayload = {
+            ambientTempCoolingThreshold: manipulatedThresholdForESP
+        };
+
+        res.status(200).json(responsePayload);
+
     } catch (error) {
-        console.error("Firestore error getting cooling settings:", error);
-        res.status(500).json({ message: 'Failed to retrieve cooling settings', details: error.message });
+        console.error("Firestore error getting cooling settings (manipulated for t_ds control):", error);
+        res.status(500).json({ message: 'Failed to retrieve cooling settings', details: error.message, ambientTempCoolingThreshold: null });
     }
 });
 
