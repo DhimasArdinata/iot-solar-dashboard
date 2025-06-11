@@ -322,9 +322,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(COOLING_SETTINGS_API_URL);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const settings = await response.json();
-            if (settings && settings.ambientTempCoolingThreshold !== null && settings.ambientTempCoolingThreshold !== undefined) {
-                ambientTempThresholdInput.value = parseFloat(settings.ambientTempCoolingThreshold).toFixed(1);
-                currentThresholdValueSpan.textContent = parseFloat(settings.ambientTempCoolingThreshold).toFixed(1);
+            // Changed to panelTempCoolingThreshold
+            if (settings && settings.panelTempCoolingThreshold !== null && settings.panelTempCoolingThreshold !== undefined) {
+                ambientTempThresholdInput.value = parseFloat(settings.panelTempCoolingThreshold).toFixed(1);
+                currentThresholdValueSpan.textContent = parseFloat(settings.panelTempCoolingThreshold).toFixed(1);
                 settingsStatusMsg.textContent = '';
             } else {
                 currentThresholdValueSpan.textContent = "Belum diatur";
@@ -343,8 +344,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function saveCoolingSettings() {
         if (!ambientTempThresholdInput || !settingsStatusMsg) return;
         const thresholdValue = parseFloat(ambientTempThresholdInput.value);
-        if (isNaN(thresholdValue) || thresholdValue < 0 || thresholdValue > 50) {
-            settingsStatusMsg.textContent = 'Nilai threshold tidak valid (harus antara 0-50).';
+        // Adjusted validation range to match backend (0-80)
+        if (isNaN(thresholdValue) || thresholdValue < 0 || thresholdValue > 80) {
+            settingsStatusMsg.textContent = 'Nilai threshold tidak valid (harus antara 0-80).';
             settingsStatusMsg.className = 'status-message error';
             return;
         }
@@ -353,14 +355,16 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(COOLING_SETTINGS_API_URL, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ambientTempCoolingThreshold: thresholdValue }),
+                // Changed to panelTempCoolingThreshold
+                body: JSON.stringify({ panelTempCoolingThreshold: thresholdValue }),
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.message || `HTTP error! status: ${response.status}`);
             settingsStatusMsg.textContent = 'Pengaturan berhasil disimpan!';
             settingsStatusMsg.className = 'status-message success';
-            if (currentThresholdValueSpan && result.newSettings?.ambientTempCoolingThreshold !== undefined) {
-                currentThresholdValueSpan.textContent = parseFloat(result.newSettings.ambientTempCoolingThreshold).toFixed(1);
+            // Changed to panelTempCoolingThreshold
+            if (currentThresholdValueSpan && result.newSettings?.panelTempCoolingThreshold !== undefined) {
+                currentThresholdValueSpan.textContent = parseFloat(result.newSettings.panelTempCoolingThreshold).toFixed(1);
             }
         } catch (error) {
             console.error("Error saving cooling settings:", error);
