@@ -185,13 +185,55 @@ app.post('/api/update', async (req, res) => {
         filteredSensorData.panelPower = null;
     }
 
-
     try {
+        // Fetch current control state and cooling threshold
+        const controlDocRef = db.collection(CONTROL_STATES_COLLECTION).doc(CURRENT_CONTROL_DOC_ID);
+        const controlDocSnap = await controlDocRef.get();
+        let currentControlState = controlDocSnap.exists ? controlDocSnap.data() : DEFAULT_CONTROL_VALUES;
+
+        const coolingConfigDocRef = db.collection(CONFIGURATION_COLLECTION).doc(COOLING_SETTINGS_DOC_ID);
+        const coolingConfigSnap = await coolingConfigDocRef.get();
+        const panelTempCoolingThreshold = coolingConfigSnap.exists 
+            ? coolingConfigSnap.data().panelTempCoolingThreshold || 30.0 // Default if field missing
+            : 30.0; // Default if document missing
+
+        // --- Automatic Control Logic (Server-side) ---
+        let desiredCoolerState;
+        const currentPanelTemp = filteredSensorData.panelTemp;
+
+        if (currentPanelTemp !== null && currentPanelTemp < panelTempCoolingThreshold) {
+            desiredCoolerState = false; // Turn off relay
+        } else if (currentPanelTemp !== null) { // If temp is available and >= threshold
+            desiredCoolerState = true;  // Turn on relay
+        } else {
+            // If panelTemp is null, maintain current state or default to off
+            desiredCoolerState = currentControlState.manualCoolerState; // Maintain last known state
+        }
+
+        // Only update manualCoolerState if manualModeActive is false (server is in auto control)
+        if (!currentControlState.manualModeActive) {
+            currentControlState.manualCoolerState = desiredCoolerState;
+            // Update the SSR states in the latest sensor data for dashboard display
+            filteredSensorData.ssr1 = desiredCoolerState;
+            filteredSensorData.ssr3 = desiredCoolerState;
+            filteredSensorData.ssr4 = desiredCoolerState;
+            filteredSensorData.coolingStatus = desiredCoolerState; // Reflect the auto-controlled state
+        } else {
+            // If manual mode is active, ensure the SSR states in filteredSensorData reflect the ESP32's reported state
+            // or the manual state from the web UI, not the server's auto calculation.
+            // The ESP32 will send its actual SSR states, which are already in newSensorData.ssrX
+            // The coolingStatus for display should reflect the manual state if active.
+            filteredSensorData.coolingStatus = currentControlState.manualCoolerState;
+        }
+
         // 1. Update the 'latest_data' document (for real-time dashboard)
         const latestDocRef = db.collection(SENSOR_READINGS_COLLECTION).doc(LATEST_SENSOR_DOC_ID);
         await latestDocRef.set(filteredSensorData, { merge: true });
 
-        // 2. Add a new document to the 'sensor_history' collection
+        // 2. Update the 'current_control' document (for ESP32 to poll)
+        await controlDocRef.set(currentControlState, { merge: true });
+
+        // 3. Add a new document to the 'sensor_history' collection
         await db.collection(SENSOR_HISTORY_COLLECTION).add(filteredSensorData);
         
         res.status(200).json({ message: 'Data updated successfully and logged to history' });
@@ -373,19 +415,13 @@ app.get('/api/cooling-settings', async (req, res) => {
         if (docSnap.exists) {
             res.json(docSnap.data());
         } else {
-            // If no settings exist, return default or an empty object
-            // Consider what the ESP32 should do if no threshold is set.
-            // For now, returning a default might be safer.
+            // If no settings exist, return default and create it
             const defaultCoolingSettings = { 
-                ambientTempCoolingThreshold: 30.0, // Example default
-                // Add other default settings here if any
-                updatedAt: FieldValue.serverTimestamp() // Or null if you prefer
+                panelTempCoolingThreshold: 30.0, // Default for panel temperature
+                updatedAt: FieldValue.serverTimestamp()
             };
-            // Optionally, create the default settings document if it doesn't exist
-            // await docRef.set(defaultCoolingSettings); 
-            // res.json(defaultCoolingSettings);
-            // For now, just indicate not found or return empty/default structure
-            res.status(200).json({ ambientTempCoolingThreshold: null }); // Or your preferred default
+            await docRef.set(defaultCoolingSettings); 
+            res.status(200).json(defaultCoolingSettings);
         }
     } catch (error) {
         console.error("Firestore error getting cooling settings:", error);
@@ -398,20 +434,19 @@ app.post('/api/cooling-settings', async (req, res) => {
     if (!admin.apps.length) {
         return res.status(503).json({ message: 'Firebase not initialized.' });
     }
-    const { ambientTempCoolingThreshold } = req.body;
+    const { panelTempCoolingThreshold } = req.body;
 
-    if (ambientTempCoolingThreshold === undefined || typeof ambientTempCoolingThreshold !== 'number' || isNaN(ambientTempCoolingThreshold)) {
-        return res.status(400).json({ message: 'Invalid or missing ambientTempCoolingThreshold. Must be a number.' });
+    if (panelTempCoolingThreshold === undefined || typeof panelTempCoolingThreshold !== 'number' || isNaN(panelTempCoolingThreshold)) {
+        return res.status(400).json({ message: 'Invalid or missing panelTempCoolingThreshold. Must be a number.' });
     }
     
     // Add reasonable bounds for the threshold
-    if (ambientTempCoolingThreshold < 0 || ambientTempCoolingThreshold > 50) {
-        return res.status(400).json({ message: 'Threshold must be between 0 and 50 degrees Celsius.' });
+    if (panelTempCoolingThreshold < 0 || panelTempCoolingThreshold > 80) { // Adjusted max temp for panel
+        return res.status(400).json({ message: 'Threshold must be between 0 and 80 degrees Celsius.' });
     }
 
     const newSettings = {
-        ambientTempCoolingThreshold: parseFloat(ambientTempCoolingThreshold.toFixed(1)), // Store with one decimal place
-        // Add any other settings here if they are part of the same config document
+        panelTempCoolingThreshold: parseFloat(panelTempCoolingThreshold.toFixed(1)), // Store with one decimal place
         updatedAt: FieldValue.serverTimestamp()
     };
 
