@@ -453,7 +453,49 @@ app.post('/api/cooling-settings', async (req, res) => {
     try {
         const docRef = db.collection(CONFIGURATION_COLLECTION).doc(COOLING_SETTINGS_DOC_ID);
         await docRef.set(newSettings, { merge: true }); // Use merge:true to update or create
-        res.status(200).json({ message: 'Cooling settings updated successfully', newSettings });
+
+        // --- Re-evaluate cooling state immediately after threshold change ---
+        const latestSensorDocRef = db.collection(SENSOR_READINGS_COLLECTION).doc(LATEST_SENSOR_DOC_ID);
+        const latestSensorDocSnap = await latestSensorDocRef.get();
+        const latestSensorData = latestSensorDocSnap.exists ? latestSensorDocSnap.data() : DEFAULT_SENSOR_VALUES;
+
+        const controlDocRef = db.collection(CONTROL_STATES_COLLECTION).doc(CURRENT_CONTROL_DOC_ID);
+        const controlDocSnap = await controlDocRef.get();
+        let currentControlState = controlDocSnap.exists ? controlDocSnap.data() : DEFAULT_CONTROL_VALUES;
+
+        let desiredCoolerState;
+        const currentPanelTemp = latestSensorData.panelTemp;
+        const newPanelTempCoolingThreshold = newSettings.panelTempCoolingThreshold; // Use the newly set threshold
+
+        if (currentPanelTemp !== null && currentPanelTemp < newPanelTempCoolingThreshold) {
+            desiredCoolerState = false; // Turn off relay
+        } else if (currentPanelTemp !== null) { // If temp is available and >= threshold
+            desiredCoolerState = true;  // Turn on relay
+        } else {
+            // If panelTemp is null, maintain current state or default to off
+            desiredCoolerState = currentControlState.manualCoolerState; // Maintain last known state
+        }
+
+        // Only update manualCoolerState if manualModeActive is false (server is in auto control)
+        if (!currentControlState.manualModeActive) {
+            currentControlState.manualCoolerState = desiredCoolerState;
+            // Update the SSR states in the latest sensor data for dashboard display
+            latestSensorData.ssr1 = desiredCoolerState;
+            latestSensorData.ssr3 = desiredCoolerState;
+            latestSensorData.ssr4 = desiredCoolerState;
+            latestSensorData.coolingStatus = desiredCoolerState; // Reflect the auto-controlled state
+        } else {
+            // If manual mode is active, ensure the coolingStatus for display reflects the manual state.
+            // SSR states in latestSensorData should ideally reflect what ESP32 reports, but for display consistency,
+            // we'll ensure coolingStatus matches the manual state.
+            latestSensorData.coolingStatus = currentControlState.manualCoolerState;
+        }
+
+        // Update Firestore documents
+        await latestSensorDocRef.set(latestSensorData, { merge: true });
+        await controlDocRef.set(currentControlState, { merge: true });
+        
+        res.status(200).json({ message: 'Cooling settings updated successfully and cooling state re-evaluated', newSettings });
     } catch (error) {
         console.error("Firestore error setting cooling settings:", error);
         res.status(500).json({ message: 'Failed to update cooling settings', details: error.message });

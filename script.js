@@ -44,6 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     let lastFetchedOldestTimestamp = null; 
     const RECORDS_PER_PAGE = 50; 
+    const tableHeaders = document.querySelectorAll('#tableView table thead th');
+    let currentSortColumn = 'timestamp'; // Default sort column
+    let currentSortOrder = 'desc'; // Default sort order (newest first)
 
     // Settings View Elements
     const ambientTempThresholdInput = document.getElementById('ambientTempThresholdInput');
@@ -243,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            let url = `${HISTORICAL_API_URL}?limit=${RECORDS_PER_PAGE}`;
+            let url = `${HISTORICAL_API_URL}?limit=${RECORDS_PER_PAGE}&sortBy=${currentSortColumn}&sortOrder=${currentSortOrder}`;
             if (fetchMore && lastFetchedOldestTimestamp) {
                 url += `&startAfterTimestamp=${encodeURIComponent(lastFetchedOldestTimestamp)}`;
             }
@@ -261,21 +264,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            const chronologicalData = historicalData.slice().reverse();
+            // Data is already sorted by the API, no need to reverse or sort again here
             let rowsToAppendHTML = '';
 
-            chronologicalData.forEach((record, index) => {
+            historicalData.forEach((record, index) => {
                 let energyForThisIntervalkWh = 0;
                 const currentTimestamp = record.updatedAtISO ? new Date(record.updatedAtISO) : null;
+                // Calculate energy for this interval based on the next record's timestamp if available
                 if (currentTimestamp && record.panelPower !== null && record.panelPower !== undefined) {
-                    if (index < chronologicalData.length - 1) {
-                        const nextRecord = chronologicalData[index + 1];
-                        const nextTimestamp = nextRecord.updatedAtISO ? new Date(nextRecord.updatedAtISO) : null;
-                        if (nextTimestamp) {
-                            const timeDeltaSeconds = (nextTimestamp.getTime() - currentTimestamp.getTime()) / 1000;
-                            if (timeDeltaSeconds > 0) {
-                                energyForThisIntervalkWh = (record.panelPower / 1000) * (timeDeltaSeconds / 3600);
-                            }
+                    // Find the next record in the *original* historicalData array for time difference calculation
+                    // This assumes historicalData is ordered by timestamp (either asc or desc)
+                    const nextRecordIndex = currentSortOrder === 'desc' ? index + 1 : index - 1;
+                    const nextRecord = historicalData[nextRecordIndex];
+
+                    if (nextRecord && nextRecord.updatedAtISO) {
+                        const nextTimestamp = new Date(nextRecord.updatedAtISO);
+                        const timeDeltaSeconds = Math.abs((nextTimestamp.getTime() - currentTimestamp.getTime()) / 1000);
+                        if (timeDeltaSeconds > 0) {
+                            energyForThisIntervalkWh = (record.panelPower / 1000) * (timeDeltaSeconds / 3600);
                         }
                     }
                 }
@@ -298,6 +304,8 @@ document.addEventListener('DOMContentLoaded', () => {
             dataTableBody.innerHTML += rowsToAppendHTML;
 
             if (historicalData.length > 0) {
+                // For pagination, lastFetchedOldestTimestamp should always be the timestamp of the *last* record in the current fetch
+                // regardless of sort order, to ensure we fetch the next "page" correctly.
                 lastFetchedOldestTimestamp = historicalData[historicalData.length - 1].updatedAtISO;
             }
             if (loadMoreBtn) {
@@ -312,6 +320,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => loadTableData(true));
+
+    // --- Table Sorting Logic ---
+    tableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const columnMap = {
+                'Timestamp': 'timestamp',
+                'Panel Temp (°C)': 'panelTemp',
+                'Ambient Temp (°C)': 'ambientTemp',
+                'Light (lx)': 'lightIntensity',
+                'Humidity (%)': 'humidity',
+                'Voltage (V)': 'panelVoltage',
+                'Current (A)': 'panelCurrent',
+                'Power (W)': 'panelPower',
+                'Energy (kWh)': 'panelEnergy', // This is calculated client-side, so sorting might be tricky
+                'Cooling': 'coolingStatus'
+            };
+            const clickedColumnText = header.textContent.trim();
+            const newSortColumn = columnMap[clickedColumnText];
+
+            if (newSortColumn) {
+                if (currentSortColumn === newSortColumn) {
+                    currentSortOrder = (currentSortOrder === 'asc' ? 'desc' : 'asc');
+                } else {
+                    currentSortColumn = newSortColumn;
+                    currentSortOrder = 'asc'; // Default to ascending for a new column
+                    if (newSortColumn === 'timestamp') {
+                        currentSortOrder = 'desc'; // Default timestamp to descending (newest first)
+                    }
+                }
+                // Remove existing sort indicators
+                tableHeaders.forEach(h => h.classList.remove('asc', 'desc'));
+                // Add new sort indicator
+                header.classList.add(currentSortOrder);
+                loadTableData(false); // Reload data with new sort parameters
+            }
+        });
+    });
 
     // --- Cooling Settings Logic ---
     async function loadCoolingSettings() {
