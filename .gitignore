@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Local Netlify folder
+.netlify
+
+# Service account keys
+cooler-panel-surya-firebase-adminsdk-fbsvc-70bfa4e384.json
+
+# Test scripts
+send_dummy_data.js
+
+# Project Specific Ignored Files
+platformio/
+.vscode/
+system_diagrams.html
+temp_base64.txt
+vercel.json
+.pio/
+build/
+libdeps/
+esp32_api_controller/

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Panel Cooling IoT Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>Menu Navigasi</h3>
+            <button class="close-sidebar-btn" id="closeSidebarBtn" aria-label="Close sidebar">&times;</button>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="#" class="sidebar-link active-link" data-view="dashboardView">Dashboard</a></li>
+            <li><a href="#" class="sidebar-link" data-view="tableView">Data Table</a></li>
+            <li><a href="#" class="sidebar-link" data-view="settingsView">Pengaturan</a></li>
+            <!-- Add more links here as needed -->
+        </ul>
+    </nav>
+
+    <div class="content-wrapper" id="contentWrapper">
+        <div class="container">
+            <header>
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                    &#9776; <!-- Hamburger icon -->
+                </button>
+                <h1>Solar Panel Cooling System Dashboard</h1>
+                <div class="header-right-elements">
+                    <p id="datetimeValue" class="datetime-display">--</p>
+                    <div class="theme-switch-wrapper">
+                        <label class="theme-switch" for="themeToggleCheckbox">
+                            <input type="checkbox" id="themeToggleCheckbox" aria-label="Toggle theme between light and dark mode" />
+                            <span class="theme-slider round"></span>
+                        </label>
+                        <em>Theme</em>
+                    </div>
+                </div>
+            </header>
+            <main>
+                <div id="dashboardView" class="view-container active-view">
+                    <div class="grid-container">
+                        <div class="card">
+                            <h2><i class="fas fa-temperature-high"></i> Suhu Panel</h2>
+                            <p id="panelTempValue" class="sensor-value">-- °C</p>
+                        </div>
+                        <div class="card">
+                            <h2><i class="fas fa-thermometer-half"></i> Suhu Ambien</h2>
+                            <p id="ambientTempValue" class="sensor-value">-- °C</p>
+                        </div>
+                        <div class="card">
+                            <h2><i class="fas fa-sun"></i> Intensitas Cahaya</h2>
+                            <p id="lightIntensityValue" class="sensor-value">-- lx</p>
+                        </div>
+                        <div class="card">
+                            <h2><i class="fas fa-tint"></i> Kelembaban</h2>
+                            <p id="humidityValue" class="sensor-value">-- %</p>
+                        </div>
+                        <div class="card">
+                            <h2><i class="fas fa-bolt-lightning"></i> Energi Panel</h2>
+                            <p id="panelEnergyValue" class="sensor-value">-- kWh</p>
+                        </div>
+                        <div class="card">
+                            <h2><i class="fas fa-bolt"></i> Tegangan Panel</h2>
+                            <p id="panelVoltageValue" class="sensor-value">-- V</p>
+                        </div>
+                        <div class="card">
+                            <h2><i class="fas fa-wave-square"></i> Arus Panel</h2>
+                            <p id="panelCurrentValue" class="sensor-value">-- A</p>
+                        </div>
+                        <div class="card">
+                            <h2>Daya Panel</h2>
+                            <p id="panelPowerValue" class="sensor-value">-- W</p>
+                        </div>
+                        <div class="card">
+                            <h2><i class="fas fa-snowflake"></i> Status Pendingin</h2>
+                            <div class="status-indicator-container">
+                                <div class="status-indicator" id="coolingStatusIndicator"></div>
+                                <span id="coolingStatusText">OFF</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h2>Kontrol Pendingin Web</h2>
+                            <div class="setting-item"> <!-- Re-using setting-item style for layout -->
+                                <label for="webOverrideSwitch">Aktifkan Kontrol Web:</label>
+                                <div class="switch-container" style="justify-content: flex-start;">
+                                    <label class="switch" for="webOverrideSwitch">
+                                        <input type="checkbox" id="webOverrideSwitch" aria-label="Activate Web Control Override">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="setting-item" id="manualCoolerControlContainer" style="margin-top: 15px;">
+                                <label for="manualCoolerStateSwitch">Status Pendingin Manual:</label>
+                                <div class="switch-container" style="justify-content: flex-start;">
+                                    <label class="switch" for="manualCoolerStateSwitch">
+                                        <input type="checkbox" id="manualCoolerStateSwitch" aria-label="Manual Cooler State On/Off">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tableView" class="view-container">
+                    <h2>Historical Data Table</h2>
+                    <div class="table-responsive-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Panel Temp (°C)</th>
+                                    <th>Ambient Temp (°C)</th>
+                                    <th>Light (lx)</th>
+                                    <th>Humidity (%)</th>
+                                    <th>Voltage (V)</th>
+                                    <th>Current (A)</th>
+                                    <th>Power (W)</th>
+                                    <th>Energy (kWh)</th>
+                                    <th>Cooling</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody">
+                                <!-- Data rows will be inserted here by JavaScript -->
+                                <tr><td colspan="10">Loading data or no data available...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls">
+                        <button id="loadMoreBtn" class="btn btn-secondary" style="display: none;">Muat Lebih Banyak</button>
+                    </div>
+                </div>
+
+                <div id="settingsView" class="view-container">
+                    <h2>Pengaturan Pendinginan</h2>
+                    <div class="card settings-card">
+                        <h3>Threshold Suhu Panel untuk Pendinginan</h3>
+                        <p>Atur suhu panel (°C) di mana sistem pendingin otomatis akan aktif.</p>
+                        <div class="setting-item">
+                            <label for="ambientTempThresholdInput">Threshold Suhu (°C):</label>
+                            <input type="number" id="ambientTempThresholdInput" name="ambientTempThresholdInput" step="0.1" min="0" max="50">
+                        </div>
+                        <button id="saveCoolingSettingsBtn" class="btn btn-primary">Simpan Pengaturan</button>
+                        <p id="currentThresholdDisplay" style="margin-top: 10px;">Ambang batas saat ini: <span id="currentThresholdValue">Memuat...</span> °C</p>
+                        <p id="settingsStatusMsg" class="status-message"></p>
+                    </div>
+                    <!-- Add more settings cards here if needed -->
+                </div>
+            </main>
+            <footer>
+                <p>IoT Dashboard v1.1 (with Sidebar)</p>
+            </footer>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
