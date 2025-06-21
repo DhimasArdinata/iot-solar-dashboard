@@ -132,7 +132,7 @@ app.get('/api/sensordata', async (req, res) => {
     }
 });
 
-// POST new sensor data (from ESP32)
+// GANTI SELURUH BLOK app.post('/api/update', ...) DENGAN YANG INI
 app.post('/api/update', async (req, res) => {
     if (!admin.apps.length) {
         return res.status(503).json({ message: 'Firebase not initialized. Check server logs.' });
@@ -140,15 +140,7 @@ app.post('/api/update', async (req, res) => {
     const data = req.body;
     console.log('Received data from ESP32 for /api/update:', data);
 
-    // Basic validation (expand as needed)
-    const panelTemp = data.t_ds !== undefined ? parseFloat(data.t_ds) : DEFAULT_SENSOR_VALUES.panelTemp;
-    // ... (add all other validations as in your original file) ...
-    // For brevity, I'm skipping the detailed validation block here, but you should include it.
-    // Example for one field:
-    if (isNaN(panelTemp) || panelTemp < 1 || panelTemp > 80) {
-         // Keep your original validation logic here
-    }
-
+    // Validasi dan persiapan data (kode ini tetap sama)
     const newSensorData = {
         panelTemp: data.t_ds !== undefined ? parseFloat(data.t_ds) : null,
         ambientTemp: data.t_dht !== undefined ? parseFloat(data.t_dht) : null,
@@ -156,90 +148,114 @@ app.post('/api/update', async (req, res) => {
         humidity: data.h_dht !== undefined ? parseFloat(data.h_dht) : null,
         panelVoltage: data.voltage !== undefined ? parseFloat(data.voltage) : null,
         panelCurrent: data.current !== undefined ? parseFloat(data.current) : null,
-        // panelPower will be calculated below if voltage and current are available
-        panelEnergy: data.energy !== undefined ? parseFloat(data.energy) : null, // Still accepts energy from ESP32 if sent
+        panelEnergy: data.energy !== undefined ? parseFloat(data.energy) : null,
         ssr1: data.ssr1 !== undefined ? Boolean(data.ssr1) : false,
-        ssr2: data.ssr2 !== undefined ? Boolean(data.ssr2) : false, // Added ssr2
+        ssr2: data.ssr2 !== undefined ? Boolean(data.ssr2) : false,
         ssr3: data.ssr3 !== undefined ? Boolean(data.ssr3) : false,
         ssr4: data.ssr4 !== undefined ? Boolean(data.ssr4) : false,
-        manualMode: data.globalManualMode !== undefined ? Boolean(data.globalManualMode) : false, // ESP32's physical switch state
+        manualMode: data.globalManualMode !== undefined ? Boolean(data.globalManualMode) : false,
         updatedAt: FieldValue.serverTimestamp()
-        // panelPower is intentionally omitted here, will be added next
     };
 
-    // Calculate panelPower if voltage and current are available
-    if (newSensorData.panelVoltage !== null && newSensorData.panelCurrent !== null && 
-        !isNaN(newSensorData.panelVoltage) && !isNaN(newSensorData.panelCurrent)) {
+    if (newSensorData.panelVoltage !== null && newSensorData.panelCurrent !== null) {
         newSensorData.panelPower = parseFloat((newSensorData.panelVoltage * newSensorData.panelCurrent).toFixed(2));
     } else {
-        newSensorData.panelPower = null; // Set to null if calculation is not possible
+        newSensorData.panelPower = null;
     }
-    
-    // Filter out null values to avoid overwriting existing fields with null if ESP sends partial data
-    // However, we explicitly want to store null for panelPower if it cannot be calculated.
-    // So, the filter should be adjusted or panelPower should be handled carefully if it's null.
-    // For now, if panelPower is calculated as null, it will be stored as null.
     const filteredSensorData = Object.fromEntries(Object.entries(newSensorData).filter(([_, v]) => v !== null));
-    // If panelPower was calculated as null and you want to ensure it's written as null (not filtered out):
     if (newSensorData.panelPower === null && !('panelPower' in filteredSensorData)) {
         filteredSensorData.panelPower = null;
     }
 
+    // --- AWAL DARI LOGIKA KONTROL BARU (SERVER-SIDE) ---
     try {
-        // Fetch current control state and cooling threshold
+        // 1. Ambil dokumen kontrol dan konfigurasi saat ini dari Firestore
         const controlDocRef = db.collection(CONTROL_STATES_COLLECTION).doc(CURRENT_CONTROL_DOC_ID);
-        const controlDocSnap = await controlDocRef.get();
-        let currentControlState = controlDocSnap.exists ? controlDocSnap.data() : DEFAULT_CONTROL_VALUES;
-
         const coolingConfigDocRef = db.collection(CONFIGURATION_COLLECTION).doc(COOLING_SETTINGS_DOC_ID);
-        const coolingConfigSnap = await coolingConfigDocRef.get();
-        const panelTempCoolingThreshold = coolingConfigSnap.exists 
-            ? coolingConfigSnap.data().panelTempCoolingThreshold || 30.0 // Default if field missing
-            : 30.0; // Default if document missing
 
-        // --- Automatic Control Logic (Server-side) ---
-        let desiredCoolerState;
-        const currentPanelTemp = filteredSensorData.panelTemp;
+        const [controlDocSnap, coolingConfigSnap] = await Promise.all([
+            controlDocRef.get(),
+            coolingConfigDocRef.get()
+        ]);
 
-        if (currentPanelTemp !== null && currentPanelTemp < panelTempCoolingThreshold) {
-            desiredCoolerState = false; // Turn off relay
-        } else if (currentPanelTemp !== null) { // If temp is available and >= threshold
-            desiredCoolerState = true;  // Turn on relay
+        const currentControlState = controlDocSnap.exists ? controlDocSnap.data() : DEFAULT_CONTROL_VALUES;
+        
+        // Ambil threshold dari konfigurasi, atau gunakan default 30.0
+        const panelTempCoolingThreshold = coolingConfigSnap.exists ?
+            (coolingConfigSnap.data().panelTempCoolingThreshold || 30.0) :
+            30.0;
+        const HYSTERESIS = 2.0; // Definisikan hysteresis (misal 2 derajat) agar tidak nyala-mati terus
+
+        // 2. Cek apakah sistem sedang dalam mode manual dari Web UI
+        if (currentControlState.manualModeActive) {
+            // JIKA MODE MANUAL: Server tidak melakukan apa-apa.
+            // Biarkan state yang sudah diatur oleh user melalui Web UI.
+            // ESP32 akan mengambil state ini dan menjalankannya.
+            console.log('Mode Manual Aktif. Server tidak mengubah state pendingin.');
+
         } else {
-            // If panelTemp is null, maintain current state or default to off
-            desiredCoolerState = currentControlState.manualCoolerState; // Maintain last known state
-        }
+            // JIKA MODE OTOMATIS: Server akan menghitung dan memutuskan.
+            console.log('Mode Otomatis Aktif. Server akan menghitung state pendingin.');
+            const currentPanelTemp = filteredSensorData.panelTemp;
+            let newDesiredCoolerState;
 
-        // Only update manualCoolerState if manualModeActive is false (server is in auto control)
-        if (!currentControlState.manualModeActive) {
-            currentControlState.manualCoolerState = desiredCoolerState;
-            // Update the SSR states in the latest sensor data for dashboard display
-            filteredSensorData.ssr1 = desiredCoolerState;
-            filteredSensorData.ssr3 = desiredCoolerState;
-            filteredSensorData.ssr4 = desiredCoolerState;
-            filteredSensorData.coolingStatus = desiredCoolerState; // Reflect the auto-controlled state
-        } else {
-            // If manual mode is active, ensure the SSR states in filteredSensorData reflect the ESP32's reported state
-            // or the manual state from the web UI, not the server's auto calculation.
-            // The ESP32 will send its actual SSR states, which are already in newSensorData.ssrX
-            // The coolingStatus for display should reflect the manual state if active.
-            filteredSensorData.coolingStatus = currentControlState.manualCoolerState;
-        }
+            if (currentPanelTemp === null || isNaN(currentPanelTemp)) {
+                // Jika suhu tidak valid, pertahankan state terakhir atau matikan
+                newDesiredCoolerState = false; // Pilihan aman adalah mematikan
+                console.log('Suhu panel tidak valid, pendingin diatur ke OFF.');
+            } else {
+                // Logika Hysteresis untuk menentukan state baru
+                const upperThreshold = panelTempCoolingThreshold;
+                const lowerThreshold = panelTempCoolingThreshold - HYSTERESIS;
 
-        // 1. Update the 'latest_data' document (for real-time dashboard)
+                if (currentPanelTemp >= upperThreshold) {
+                    newDesiredCoolerState = true; // Nyalakan jika suhu di atas ambang batas atas
+                } else if (currentPanelTemp <= lowerThreshold) {
+                    newDesiredCoolerState = false; // Matikan jika suhu di bawah ambang batas bawah
+                } else {
+                    // Jika suhu di antara keduanya, pertahankan state sebelumnya
+                    newDesiredCoolerState = currentControlState.manualCoolerState;
+                }
+                console.log(`Suhu: ${currentPanelTemp.toFixed(1)}C, Threshold: ${lowerThreshold.toFixed(1)}-${upperThreshold.toFixed(1)}C. State pendingin dihitung: ${newDesiredCoolerState ? 'ON' : 'OFF'}`);
+            }
+
+            // 3. Update 'manualCoolerState' di Firestore HANYA JIKA ada perubahan
+            if (newDesiredCoolerState !== currentControlState.manualCoolerState) {
+                console.log(`State pendingin berubah dari ${currentControlState.manualCoolerState} ke ${newDesiredCoolerState}. Mengupdate Firestore...`);
+                await controlDocRef.set({
+                    manualCoolerState: newDesiredCoolerState
+                }, { merge: true });
+            }
+        }
+        
+        // --- AKHIR DARI LOGIKA KONTROL BARU ---
+        
+        // Lanjutkan dengan menyimpan data sensor ke 'latest_data' dan 'sensor_history'
+        // Kita juga perlu update coolingStatus untuk ditampilkan di dashboard
+        const finalControlState = (await controlDocRef.get()).data();
+        const finalCoolingStatus = finalControlState.manualModeActive 
+                                   ? finalControlState.manualCoolerState 
+                                   : finalControlState.manualCoolerState; // Di mode auto, status pendingin juga mengikuti manualCoolerState yang baru dihitung server
+
+        filteredSensorData.coolingStatus = finalCoolingStatus;
+        filteredSensorData.ssr1 = finalCoolingStatus;
+        filteredSensorData.ssr2 = finalCoolingStatus;
+        filteredSensorData.ssr3 = finalCoolingStatus;
+        filteredSensorData.ssr4 = finalCoolingStatus;
+
         const latestDocRef = db.collection(SENSOR_READINGS_COLLECTION).doc(LATEST_SENSOR_DOC_ID);
         await latestDocRef.set(filteredSensorData, { merge: true });
-
-        // 2. Update the 'current_control' document (for ESP32 to poll)
-        await controlDocRef.set(currentControlState, { merge: true });
-
-        // 3. Add a new document to the 'sensor_history' collection
         await db.collection(SENSOR_HISTORY_COLLECTION).add(filteredSensorData);
-        
-        res.status(200).json({ message: 'Data updated successfully and logged to history' });
+
+        res.status(200).json({
+            message: 'Data updated successfully and control state evaluated'
+        });
+
     } catch (error) {
         console.error("Firestore update/history log error for /api/update:", error);
-        res.status(500).json({ message: 'Failed to update data and log to history in Firestore' });
+        res.status(500).json({
+            message: 'Failed to update data and log to history in Firestore'
+        });
     }
 });
 
